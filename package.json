@@ -1,0 +1,31 @@
+{
+  "name": "crafty",
+  "version": "1.0.0",
+  "description": "utilities",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/llnek/crafty.git"
+  },
+  "author": "Kenneth Leung",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/llnek/crafty/issues"
+  },
+  "homepage": "https://github.com/llnek/crafty#readme",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.1",
+    "gulp-jsdoc3": "^3.0.0",
+    "gulp-notify": "^4.0.0",
+    "gulp-rename": "^2.0.0",
+    "gulp-sourcemaps": "^2.6.5",
+    "gulp-terser": "^1.4.0",
+    "gulp-uglify": "^3.0.2"
+  },
+  "dependencies": {
+  }
+}
