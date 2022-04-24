@@ -1,0 +1,2 @@
+# crafty
+Useful algorithms
