@@ -1,6 +1,6 @@
 # crafty
 
-Collection of implementations of various common algorithms in javascript.
+Collection of implementations of various common algorithms, including A*, genetic algorithms, in javascript.
 
 [![Build Status](https://travis-ci.org/llnek/crafty.svg?branch=master)](https://travis-ci.org/llnek/crafty)
 
