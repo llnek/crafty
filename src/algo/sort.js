@@ -18,10 +18,9 @@
 
   /**Create the module.
    */
-  function _module(Core,_M,Basic){
+  function _module(Core,Basic){
 
     if(!Core) Core= gscope["io/czlab/mcfud/core"]();
-    if(!_M) _M= gscope["io/czlab/mcfud/math"]();
     if(!Basic) Basic= gscope["io/czlab/mcfud/algo/basic"]();
     const {prnIter,Bag,Stack,Iterator,StdCompare:CMP}= Basic;
     const int=Math.floor;
@@ -145,7 +144,7 @@
           // binary search to determine index j at which to insert a[i]
           lo = 0; hi = i; v = a[i];
           while(lo<hi){
-            mid = lo + _M.ndiv(hi-lo,2);
+            mid = lo + _.ndiv(hi-lo,2);
             if(less(v, a[mid],compareFn)) hi = mid;
             else lo = mid + 1;
           }
@@ -207,7 +206,7 @@
        */
       static sort(a, compareFn){
         let n = a.length,
-            h=1, n3= _M.ndiv(n,3);
+            h=1, n3= _.ndiv(n,3);
         // 3x+1 increment sequence:  1, 4, 13, 40, 121, 364, 1093, ...
         while(h < n3) h = 3*h + 1;
         while(h >= 1){
@@ -216,7 +215,7 @@
             for(let j=i; j>=h && less(a[j], a[j-h],compareFn); j -= h)
               exch(a, j, j-h);
           }
-          h= _M.ndiv(h,3);
+          h= _.ndiv(h,3);
         }
         return a;
       }
@@ -270,7 +269,7 @@
     // mergesort a[lo..hi] using auxiliary array aux[lo..hi]
     function sortIndex(a, index, aux, lo, hi,C){
       if(hi<=lo){}else{
-        let mid = lo + _M.ndiv(hi-lo,2);
+        let mid = lo + _.ndiv(hi-lo,2);
         sortIndex(a, index, aux, lo, mid,C);
         sortIndex(a, index, aux, mid + 1, hi,C);
         mergeIndex(a, index, aux, lo, mid, hi,C);
@@ -294,7 +293,7 @@
         // mergesort a[lo..hi] using auxiliary array aux[lo..hi]
         function _sort(a, aux, lo, hi,C){
           if(hi<=lo){}else{
-            let mid = lo + _M.ndiv(hi-lo,2);
+            let mid = lo + _.ndiv(hi-lo,2);
             _sort(a, aux, lo, mid,C);
             _sort(a, aux, mid + 1, hi,C);
             merge(a, aux, lo, mid, hi,C);
@@ -1081,14 +1080,14 @@
         this._sink(1);
         this.pq[this.n+1] = UNDEF;// to avoid loitering and help with garbage collection
         if((this.n>0) &&
-           (this.n== _M.ndiv(this.pq.length-1,4)))
-          this.pq= resize(_M.ndiv(this.pq.length,2),this.n,1,this.n+1,this.pq);
+           (this.n== _.ndiv(this.pq.length-1,4)))
+          this.pq= resize(_.ndiv(this.pq.length,2),this.n,1,this.n+1,this.pq);
         return min;
       }
       _swim(k){
-        while(k>1 && this._greater(_M.ndiv(k,2), k)){
-          exch(this.pq, k, _M.ndiv(k,2));
-          k=_M.ndiv(k,2);
+        while(k>1 && this._greater(_.ndiv(k,2), k)){
+          exch(this.pq, k, _.ndiv(k,2));
+          k=_.ndiv(k,2);
         }
       }
       _sink(k){
@@ -1223,8 +1222,8 @@
         this._sink(1);
         this.pq[this.n+1] = null;     // to avoid loitering and help with garbage collection
         if(this.n > 0 &&
-           this.n == _M.ndiv(this.pq.length-1,4))
-          this.pq=resize(_M.ndiv(this.pq.length,2), this.n, 1, this.n+1, this.pq);
+           this.n == _.ndiv(this.pq.length-1,4))
+          this.pq=resize(_.ndiv(this.pq.length,2), this.n, 1, this.n+1, this.pq);
         return max;
       }
       _isMaxHeap(){
@@ -1242,9 +1241,9 @@
         return this._isMaxHeapOrdered(left) && this._isMaxHeapOrdered(right);
       }
       _swim(k){
-        while(k>1 && less4(this.pq, _M.ndiv(k,2), k, this.comparator)){
-          exch(this.pq, k, _M.ndiv(k,2));
-          k= _M.ndiv(k,2);
+        while(k>1 && less4(this.pq, _.ndiv(k,2), k, this.comparator)){
+          exch(this.pq, k, _.ndiv(k,2));
+          k= _.ndiv(k,2);
         }
       }
       _sink(k){
@@ -1325,7 +1324,7 @@
         }
         let k,n=pq.length;
         // heapify phase
-        for(k = _M.ndiv(n,2); k >= 1; --k){
+        for(k = _.ndiv(n,2); k >= 1; --k){
           _sink4(pq, k, n, compareFn)
         }
         // sortdown phase
@@ -1518,9 +1517,9 @@
         this.qp[this.pq[j]] = j;
       }
       _swim(k){
-        while(k>1 && this._greater(_M.ndiv(k,2), k)){
-          this._exch(k, _M.ndiv(k,2));
-          k = _M.ndiv(k,2);
+        while(k>1 && this._greater(_.ndiv(k,2), k)){
+          this._exch(k, _.ndiv(k,2));
+          k = _.ndiv(k,2);
         }
       }
       _sink(k){
@@ -1744,9 +1743,9 @@
         this.qp[this.pq[j]] = j;
       }
       _swim(k){
-        while(k > 1 && this._less(_M.ndiv(k,2), k)) {
-          this._exch(k, _M.ndiv(k,2));
-          k = _M.ndiv(k,2);
+        while(k > 1 && this._less(_.ndiv(k,2), k)) {
+          this._exch(k, _.ndiv(k,2));
+          k = _.ndiv(k,2);
         }
       }
       _sink(k){
@@ -1828,8 +1827,7 @@
 
   //export--------------------------------------------------------------------
   if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"),
-                           require("../main/math"), require("./basic"))
+    module.exports=_module(require("mcfud"), require("./basic"))
   }else{
     gscope["io/czlab/mcfud/algo/sort"]=_module
   }

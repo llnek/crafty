@@ -971,7 +971,7 @@
 
   //export--------------------------------------------------------------------
   if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"))
+    module.exports=_module(require("mcfud"))
   }else{
     gscope["io/czlab/mcfud/algo/basic"]=_module
   }
