@@ -708,6 +708,39 @@
     }
     //TwoSum.test();
 
+    class MatchBrackets{
+      static solve(input){
+        function check(input){
+          let
+            stack = [],
+            brackets = "[]{}()<>";
+          for(let ci,c, i=0;i<input.length;++i){
+            c=input.charAt(i);
+            ci = brackets.indexOf(c);
+            if(ci % 2 == 0){
+              //expect this closing
+              stack.push(ci + 1);
+            }else{
+              if(stack.pop() != ci){
+                return false;
+              }
+            }
+          }
+          return stack.length == 0;
+        }
+        return check(input);
+      }
+      static test(){
+        let v=MatchBrackets.solve("([])[{}]{(([))}");
+        console.log(`ans= ${v}`)
+
+        v=MatchBrackets.solve("([])[{}]{(())}");
+        console.log(`ans= ${v}`)
+
+      }
+    }
+    //MatchBrackets.test();
+
     //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     class TenAlgos{
       static solve1(){
