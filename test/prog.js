@@ -18,10 +18,11 @@
 
   /**Create the module.
    */
-  function _module(Core,Basic,Sort){
+  function _module(Mcfud,Sort){
 
-    if(!Core) Core= gscope["io/czlab/mcfud/core"]();
-    if(!Basic) Basic= gscope["io/czlab/mcfud/algo/basic"]();
+    const Basic= Mcfud ? Mcfud["Basic"] : gscope["io/czlab/mcfud/algo/basic"]();
+    const Core= Mcfud ? Mcfud["Core"] : gscope["io/czlab/mcfud/core"]();
+
     if(!Sort) Sort= gscope["io/czlab/mcfud/algo/sort"]();
 
     const {Bag,Stack,Queue,StdCompare:CMP,prnIter}= Basic;
@@ -962,7 +963,7 @@
 
   //export--------------------------------------------------------------------
   if(typeof module == "object" && module.exports){
-    module.exports=_module(require("mcfud"),require("../src/algo/basic"),require("../src/algo/sort"))
+    module.exports=_module(require("@czlab/mcfud"),require("../src/algo/sort"))
   }else{
     gscope["io/czlab/mcfud/algo/prog"]=_module
   }

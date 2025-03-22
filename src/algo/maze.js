@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Copyright © 2013-2022, Kenneth Leung. All rights reserved.
+// Copyright © 2025, Kenneth Leung. All rights reserved.
 
 ;(function(gscope,UNDEF){
 
@@ -18,10 +18,10 @@
 
   /**Create the module.
    */
-  function _module(Core,_M){
+  function _module(Mcfud){
 
-    if(!Core) Core= gscope["io/czlab/mcfud/core"]();
-    if(!_M) _M= gscope["io/czlab/mcfud/math"]();
+    const Core= Mcfud ? Mcfud["Core"] : gscope["io/czlab/mcfud/core"]();
+    const _M = Mcfud ? Mcfud["Math"] : gscope["io/czlab/mcfud/math"]();
 
     const {is,u:_}= Core;
 
@@ -422,8 +422,7 @@
 
   //export--------------------------------------------------------------------
   if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"),
-                           require("../main/math"));
+    module.exports=_module(require("@czlab/mcfud"))
   }else{
     gscope["io/czlab/mcfud/algo/maze"]=_module
   }

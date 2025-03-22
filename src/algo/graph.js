@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Copyright © 2013-2022, Kenneth Leung. All rights reserved.
+// Copyright © 2025, Kenneth Leung. All rights reserved.
 
 ;(function(gscope,UNDEF){
 
@@ -18,12 +18,12 @@
 
   /**Create the module.
    */
-  function _module(Core,_M,Basic,Sort){
+  function _module(Mcfud,Sort){
 
-    if(!Basic) Basic= gscope["io/czlab/mcfud/algo/basic"]();
+    const Basic= Mcfud ? Mcfud["Basic"] : gscope["io/czlab/mcfud/algo/basic"]();
+    const Core= Mcfud ? Mcfud["Core"] : gscope["io/czlab/mcfud/core"]();
+    const _M= Mcfud ? Mcfud["Math"] : gscope["io/czlab/mcfud/math"]();
     if(!Sort) Sort= gscope["io/czlab/mcfud/algo/sort"]();
-    if(!Core) Core= gscope["io/czlab/mcfud/core"]();
-    if(!_M) _M= gscope["io/czlab/mcfud/math"]();
 
     const {prnIter, TreeMap,Bag,Stack,Queue,ST,StdCompare:CMP}= Basic;
     const {IndexMinPQ,MinPQ}= Sort;
@@ -2372,9 +2372,7 @@
 
   //export--------------------------------------------------------------------
   if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"),
-                           require("../main/math"),
-                           require("./basic"), require("./sort"))
+    module.exports=_module(require("@/czlab/mcfud"), require("./sort"))
   }else{
     gscope["io/czlab/mcfud/algo/graph"]=_module
   }

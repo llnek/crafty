@@ -8,14 +8,16 @@ const jsdoc=require("gulp-jsdoc3");
 const sourcemaps = require('gulp-sourcemaps');
 
 const jsFiles = [
-  "src/algo/basic.js",
   "src/algo/sort.js",
   "src/algo/search.js",
   "src/algo/graph.js",
   "src/algo/genetic.js",
-  "src/algo/NEAT.js",
-  "src/algo/NEAT2.js",
-  "src/algo/maze.js"
+  "src/algo/maze.js",
+  "src/algo/minimax.js",
+  "src/algo/negamax.js",
+  "src/algo/NEAT_CBullet.js",
+  "src/algo/NEAT_Buckland.js",
+  "src/algo/epilogue.js"
 ];
 
 var destDir = 'dist'; //or any folder inside your public asset folder

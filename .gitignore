@@ -21,6 +21,7 @@ frameworks
 *.jar
 *.zip
 *.gz
+*.tgz
 
 .cljs_node_repl
 .lein-*

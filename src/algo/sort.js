@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Copyright © 2013-2022, Kenneth Leung. All rights reserved.
+// Copyright © 2025, Kenneth Leung. All rights reserved.
 
 ;(function(gscope,UNDEF){
 
@@ -18,10 +18,11 @@
 
   /**Create the module.
    */
-  function _module(Core,Basic){
+  function _module(Mcfud){
 
-    if(!Core) Core= gscope["io/czlab/mcfud/core"]();
-    if(!Basic) Basic= gscope["io/czlab/mcfud/algo/basic"]();
+    const Basic= Mcfud ? Mcfud["Core"] : gscope["io/czlab/mcfud/algo/basic"]();
+    const Core= Mcfud ? Mcfud["Basic"] : gscope["io/czlab/mcfud/core"]();
+
     const {prnIter,Bag,Stack,Iterator,StdCompare:CMP}= Basic;
     const int=Math.floor;
     const {is,u:_}= Core;
@@ -1827,7 +1828,7 @@
 
   //export--------------------------------------------------------------------
   if(typeof module == "object" && module.exports){
-    module.exports=_module(require("mcfud"), require("./basic"))
+    module.exports=_module(require("@czlab/mcfud"))
   }else{
     gscope["io/czlab/mcfud/algo/sort"]=_module
   }

@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Copyright © 2013-2022, Kenneth Leung. All rights reserved.
+// Copyright © 2025, Kenneth Leung. All rights reserved.
 
 ;(function(gscope,UNDEF){
 
@@ -18,993 +18,11 @@
 
   /**Create the module.
    */
-  function _module(Core){
+  function _module(Mcfud){
 
-    if(!Core) Core= gscope["io/czlab/mcfud/core"]();
+    const Basic= Mcfud ? Mcfud["Core"] : gscope["io/czlab/mcfud/algo/basic"]();
+    const Core= Mcfud ? Mcfud["Basic"] : gscope["io/czlab/mcfud/core"]();
 
-    const CMP=(a,b)=> a<b?-1:(a>b?1:0);
-    const int=Math.floor;
-    const {is, u:_}= Core;
-
-    /**
-     * @module mcfud/algo_basic
-     */
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    const _checkKey=(key)=> _.assert(is.num(key) || is.str(key), `expected number or string`);
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    function prnIter(it, sep=" ",out=""){
-      for(; it.hasNext();) out += `${it.next()}${sep}`;
-      return out;
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**Represents an interable.
-     * @memberof module:mcfud/algo_basic
-     * @class
-     */
-    class Iterator{
-      constructor(c){
-        this.current=c;// node to starts with
-      }
-      hasNext(){ return _.echt(this.current) }
-      remove(){ throw Error("Unsupported")  }
-      next(){
-        if(!this.hasNext())
-          throw Error("NoSuchElementException");
-        let item = this.current.item;
-        this.current = this.current.next;
-        return item;
-      }
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**Helper linked list
-     * @memberof module:mcfud/algo_basic
-     * @param {any} item
-     * @param {object} next
-     * @return {object}
-     */
-    function Node(item,next=UNDEF){
-      return { item, next }
-    }
-
-    /**Represents a bag (or multiset) of generic items.
-     * @memberof module:mcfud/algo_basic
-     * @class
-     */
-    class Bag{
-      constructor(){
-        //* @property {first} beginning of bag
-        //* @property {n} number of elements in bag
-        this.first = UNDEF;
-        this.n = 0;
-      }
-      clone(){
-        let b=new Bag(),
-            q,p=this.first;
-        while(p){
-          if(q){
-            q.next=Node(p.item);
-            q=q.next;
-          }else{
-            b.first= q =Node(p.item);
-          }
-          b.n+=1;
-          p=p.next;
-        }
-        return b;
-      }
-      /**Returns true if this bag is empty.
-       * @return {boolean}
-       */
-      isEmpty(){
-        return _.nichts(this.first)
-      }
-      /**Returns the number of items in this bag.
-       * @return {number}
-       */
-      size(){
-        return this.n;
-      }
-      /**Adds the item to this bag.
-       * @param {any} item the item to add to this bag
-       */
-      add(item){
-        //adds this back to front, first always points to last added
-        this.first = Node(item, this.first);
-        this.n+=1;
-      }
-      /**Returns an iterator that iterates over the items in this bag in arbitrary order.
-       * @return {Iterator}
-       */
-      iter(){
-        return new Iterator(this.first);
-      }
-      static test(){
-        let obj= new Bag();
-        "to be or not to - be - - that - - - is".split(" ").forEach(n=> obj.add(n));
-        console.log("size of bag = " + obj.size());
-        console.log(prnIter(obj.iter()));
-        let c=obj.clone();
-        console.log("size of cloned = " + c.size());
-        console.log(prnIter(c.iter()));
-      }
-    }
-    //Bag.test();
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**Represents a last-in-first-out (LIFO) stack of generic items.
-     * @memberof module:mcfud/algo_basic
-     * @class
-     */
-    class Stack{
-      constructor(){
-        //* @property {first} top of stack
-        //* @property {n} size of stack
-        this.first = UNDEF;
-        this.n = 0;
-      }
-      clone(){
-        let b=new Stack(),
-            q,p=this.first;
-        while(p){
-          if(q){
-            q.next=Node(p.item);
-            q=q.next;
-          }else{
-            b.first= q =Node(p.item);
-          }
-          b.n+=1;
-          p=p.next;
-        }
-        return b;
-      }
-      /**Returns true if this stack is empty.
-       * @return {boolean}
-       */
-      isEmpty(){
-        return _.nichts(this.first);
-      }
-      /**Returns the number of items in this stack.
-       * @return {number}
-       */
-      size(){
-        return this.n;
-      }
-      /**Adds the item to this stack.
-       * @param {any} item
-       */
-      push(item){
-        this.first = Node(item, this.first);
-        this.n+=1;
-      }
-      /**Removes and returns the item most recently added to this stack.
-       * @return {any}
-       */
-      pop(){
-        if(this.isEmpty())
-          throw Error("Stack underflow");
-        let item = this.first.item; // save item to return
-        this.first = this.first.next; // delete first node
-        this.n -= 1;
-        return item;                   // return the saved item
-      }
-      /**Returns (but does not remove) the item most recently added to this stack.
-       * @return {any}
-       */
-      peek(){
-        if(this.isEmpty())
-          throw Error("Stack underflow");
-        return this.first.item;
-      }
-      /**Returns a string representation of this stack.
-       * @return {string}
-       */
-      toString(){
-        return prnIter(this.iter())
-      }
-      /**Returns an iterator to this stack that iterates through the items in LIFO order.
-       * @return {Iterator}
-       */
-      iter(){
-        return new Iterator(this.first)
-      }
-      static test(){
-        let obj= new Stack();
-        "to be or not to - be - - that - - - is".split(" ").forEach(s=>{
-          if(s != "-"){
-            obj.push(s);
-          }else if(!obj.isEmpty()){
-            console.log("(-)" + obj.pop() + " ");
-          }
-        });
-        console.log("(" + obj.size() + " left on stack)");
-        let c= obj.clone();
-        console.log("cloned= " + prnIter(c.iter()));
-        console.log("(" + c.size() + " left on stack)");
-      }
-    }
-    //Stack.test();
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**Represents a first-in-first-out (FIFO) queue of generic items.
-     * @memberof module:mcfud/algo_basic
-     * @class
-     */
-    class Queue{
-      constructor(){
-        //* @property {first} beginning of queue
-        //* @property {last} end of queue
-        //* @property {n} number of elements on queue
-        this.first = UNDEF;
-        this.last  = UNDEF;
-        this.n = 0;
-      }
-      clone(){
-        let q=new Queue(),
-            p=this.first;
-        while(p){
-          q.enqueue(p.item);
-          p=p.next;
-        }
-        return q;
-      }
-      /**Returns true if this queue is empty.
-       * @return {boolean}
-       */
-      isEmpty(){
-        return _.nichts(this.first)
-      }
-      /**Returns the number of items in this queue.
-       * @return {number}
-       */
-      size(){
-        return this.n;
-      }
-      /**Returns the item least recently added to this queue.
-       * @return {any}
-       */
-      peek(){
-        if(this.isEmpty()) throw Error("Queue underflow");
-        return this.first.item;
-      }
-      /**Adds the item to this queue.
-       * @param {any} item
-       */
-      enqueue(item){
-        let oldlast = this.last;
-        this.last = Node(item);
-        if(this.isEmpty()) this.first = this.last;
-        else oldlast.next = this.last;
-        this.n+=1;
-      }
-      /**Removes and returns the item on this queue that was least recently added.
-       * @return {any}
-       */
-      dequeue(){
-        if(this.isEmpty()) throw Error("Queue underflow");
-        let item = this.first.item;
-        this.first = this.first.next;
-        this.n-=1;
-        if(this.isEmpty()) this.last = UNDEF;   // to avoid loitering
-        return item;
-      }
-      /**Returns a string representation of this queue.
-       * @return {string}
-       */
-      toString(){
-        return prnIter(this.iter())
-      }
-      /**Returns an iterator that iterates over the items in this queue in FIFO order.
-       * @return {Iterator}
-       */
-      iter(){
-        return new Iterator(this.first)
-      }
-      static test(){
-        let queue = new Queue();
-        "to be or not to - be - - that - - - is".split(/\s+/).forEach(s=>{
-          if(s!="-")
-            queue.enqueue(s);
-          else if(!queue.isEmpty())
-            console.log(queue.dequeue() + " ");
-        });
-        console.log("(" + queue.size() + " left on queue)");
-        let c= queue.clone();
-        console.log("cloned= "+ prnIter(c.iter()));
-        console.log("(" + c.size() + " left on queue)");
-      }
-    }
-    //Queue.test();
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    //Original source from https://github.com/awstuff/TreeMap.js
-    /**The map is sorted according to the natural ordering of its keys,or via the
-     * provided comparator.
-     * @memberof module:mcfud/algo_basic
-     * @class
-     */
-    class TreeMap{
-      /**
-       * @param {function} C compare function
-       */
-      constructor(C){
-        //* @property {function} compare comparator function
-        //* @property {object} root top of the map
-        //* @property {number} n number of elements in map
-        this.compare=C || CMP;
-        this.root=UNDEF;
-        this.n=0;
-      }
-      /**Number of entries in map.
-       * @return {number} size of map
-       */
-      size(){
-        return this.n
-      }
-      /**Check if key exists in map..
-       * @param {any} key
-       * @return {boolean}
-       */
-      contains(key){
-        return this.get(key) !== undefined
-      }
-      /**Get value for this key.
-       * @param {any} key
-       * @return {any} value if found else undefined
-       */
-      get(key){
-        const _get=(key,node,res)=>{
-          if(node){
-            let c=this.compare(key,node.key);
-            res= c<0 ?_get(key, node.left) : (c>0 ? _get(key, node.right): node.value);
-          }
-          return res;
-        }
-        if(_checkKey(key) && this.n>0) return _get(key,this.root);
-      }
-      /**Associate key with this value
-       * @param {any} key
-       * @param {any} val cannot be undefined
-       */
-      set(key, value){
-        const _set=(key,value,node)=>{
-          if(!node){
-            this.n+=1;
-            return{key,value};
-          }
-          let c= this.compare(key,node.key);
-          if(c<0){
-            node.left = _set(key, value, node.left);
-          }else if(c>0){
-            node.right = _set(key, value, node.right);
-          }else{
-            node.value = value;
-          }
-          return node;
-        }
-        if(_checkKey(key) &&
-           value !== undefined)
-          this.root = _set(key, value, this.root);
-      }
-      _getMaxNode(node){
-        while(node && node.right){ node = node.right }
-        return node;
-      }
-      _getMaxKey(){
-        let n = this._getMaxNode(this.root);
-        if(n)
-          return n.key;
-      }
-      _getMinNode(node){
-        while(node && node.left){ node = node.left }
-        return node;
-      }
-      _getMinKey(){
-        let n = this._getMinNode(this.root);
-        if(n)
-          return n.key;
-      }
-      /**Remove key from map.
-       * @param {any} key
-       */
-      remove(key){
-        const _del=(key,node)=>{
-          if(node){
-            let k,v,m,c= this.compare(key,node.key);
-            if(c<0){
-              node.left = _del(key, node.left);
-            }else if(c>0){
-              node.right = _del(key, node.right);
-            }else{
-              if(node.left && node.right){
-                m = this._getMaxNode(node.left);
-                k = m.key;
-                v = m.value;
-                m.value = node.value;
-                m.key = node.key;
-                node.key = k;
-                node.value = v;
-                node.left = _del(key, node.left);
-              }else if(node.left){
-                node=node.left;
-                this.n -=1;
-              }else if(node.right){
-                node= node.right;
-                this.n -=1;
-              }else{
-                node= UNDEF;
-                this.n -=1;
-              }
-            }
-          }
-          return node;
-        }
-        if(_checkKey(key))
-          this.root = _del(key, this.root);
-      }
-      /**List keys in this map.
-       * @return {Iterator}
-       */
-      keys(){
-        let out=new Queue();
-        this.forEach((v,k)=> out.enqueue(k));
-        return out.iter();
-      }
-      /**Get the first key.
-       * @return {any}
-       */
-      firstKey(){
-        let ret;
-        try{
-          this.forEach((v,k)=>{
-            ret=k;
-            throw Error("????");
-          });
-        }catch(e){}
-        return ret;
-      }
-      /**Get the last key
-       * @return {any} the last key
-       */
-      lastKey(){
-        let ret;
-        this.forEach((v,k)=>{ ret=k });
-        return ret;
-      }
-      /**Iterate the map.
-       * @param {function} cb callback function
-       * @param {object} ctx callback context
-       */
-      forEach(cb, ctx){
-        function _invokeCb(ctx,cb){
-          return cb && cb.apply(ctx, Array.prototype.slice.call(arguments, 2)) }
-        function _each(node, cb, ctx, func){
-          if(!node)
-            return _invokeCb(ctx, func);
-          _each(node.left, cb, ctx, function(){
-            _invokeCb(ctx, cb, node.value, node.key);
-            _each(node.right, cb, ctx, function(){ _invokeCb(ctx, func) });
-          });
-        }
-        _each(this.root, cb, ctx);
-      }
-      static test(){
-        let t= new TreeMap();
-        t.set(3, "3"); t.set(2,"2"); t.set(7,"7"), t.set(1,"1");
-        console.log(`firstKey= ${t.firstKey()}`);
-        console.log(`lastKey= ${t.lastKey()}`);
-        console.log(prnIter(t.keys()));
-        console.log(`k= ${t.get(3)}`);
-        console.log(`has 2 = ${t.contains(2)}`);
-        console.log(`has size = ${t.size()}`);
-        t.remove(1);
-        console.log(`has size = ${t.size()}`);
-        console.log(prnIter(t.keys()));
-        console.log(`k= ${t.get(2)}`);
-        //t= new TreeMap();
-        //t.set("ghi", "3"); t.set("def","2"); t.set("jkl","7"), t.set("zbc","1");
-        //console.log(prnIter(t.keys()));
-      }
-    }
-    //TreeMap.test();
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**Represents an ordered symbol table of generic key-value pairs.
-     * @memberof module:mcfud/algo_basic
-     * @class
-     */
-    class ST{
-      constructor(){
-        this.st = new TreeMap();
-      }
-      /**Returns the value associated with the given key in this symbol table.
-       * @param  key the key
-       * @return {any}
-       */
-      get(key){
-        if(_.nichts(key)) throw Error("calls get() with null key");
-        return this.st.get(key);
-      }
-      /**Inserts the specified key-value pair into the symbol table, overwriting the old
-       * value with the new value if the symbol table already contains the specified key.
-       * Deletes the specified key (and its associated value) from this symbol table
-       * if the specified value is {@code null}.
-       * @param  {any} key the key
-       * @param  {any} val the value, if undefined, key is removed
-       */
-      put(key, val){
-        if(_.nichts(key)) throw Error("calls put() with null key");
-        if(val === undefined) this.st.remove(key);
-        else this.st.set(key, val);
-      }
-      /**Removes the specified key and its associated value from this symbol table
-       * (if the key is in this symbol table).
-       * This is equivalent to {@code remove()}, but we plan to deprecate {@code delete()}.
-       * @param  key the key
-       */
-      remove(key){
-        if(_.nichts(key)) throw Error("calls remove() with null key");
-        this.st.remove(key);
-      }
-      /**Returns true if this symbol table contain the given key.
-       * @param  {any} key
-       * @return {boolean}
-       */
-      contains(key){
-        if(_.nichts(key)) throw Error("calls contains() with null key");
-        return this.st.contains(key);
-      }
-      /**Returns the number of key-value pairs in this symbol table.
-       * @return {number}
-       */
-      size(){
-        return this.st.size();
-      }
-      /**Returns true if this symbol table is empty.
-       * @return {boolean}
-       */
-      isEmpty(){
-        return this.size() == 0;
-      }
-      /**Returns all keys in this symbol table.
-       * To iterate over all of the keys in the symbol table named {@code st},
-       * use the foreach notation: {@code for (Key key : st.keys())}.
-       * @return {Iterator}
-       */
-      keys(){
-        return this.st.keys();
-      }
-      /**Returns the smallest key in this symbol table.
-       * @return {any}
-       */
-      min(){
-        if(this.isEmpty()) throw Error("calls min() with empty symbol table");
-        return this.st.firstKey();
-      }
-      /**Returns the largest key in this symbol table.
-       * @return {any}
-       */
-      max(){
-        if(this.isEmpty()) throw Error("calls max() with empty symbol table");
-        return this.st.lastKey();
-      }
-      /**Returns the smallest key in this symbol table greater than or equal to {@code key}.
-       * @param  {any} key
-       * @return {any}
-       */
-      ceiling(key){
-        if(_.nichts(key)) throw Error("argument to ceiling() is null");
-        let w,k,it= this.st.keys();
-        while(it.hasNext()){
-          k=it.next();
-          if(k == key || k>key){
-            w=k;
-            break;
-          }
-        }
-        if(w===undefined)
-          throw Error("argument to ceiling() is too large");
-        return w;
-      }
-      /**Returns the largest key in this symbol table less than or equal to {@code key}.
-       * @param  {any} key the key
-       * @return {any}
-       */
-      floor(key){
-        if(_.nichts(key)) throw Error("argument to floor() is null");
-        let w,k,it= this.st.keys();
-        while(it.hasNext()){
-          k=it.next();
-          if(k == key || k<key){
-            w=k;
-          }
-        }
-        if(w===undefined)
-          throw Error("argument to floor() is too small");
-        return w;
-      }
-      static test(){
-        let t= new ST();
-        t.put("a",1);t.put("g", 9); t.put("c",3); t.put("j",10); t.put("z",26); t.put("x",24);
-        console.log(`isEmpty= ${t.isEmpty()}`);
-        console.log(`size= ${t.size()}`);
-        console.log(`get-c= ${t.get("c")}`);
-        console.log(`contains z= ${t.contains("z")}`);
-        console.log(`contains m= ${t.contains("m")}`);
-        console.log(prnIter(t.keys()));
-        console.log(`ceil w= ${t.ceiling("w")}`);
-        console.log(`floor k= ${t.floor("k")}`);
-        console.log(`min = ${t.min()}`);
-        console.log(`max = ${t.max()}`);
-        t.remove("x");
-        console.log(prnIter(t.keys()));
-      }
-    }
-    //ST.test();
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**Represents an ordered symbol table of generic key-value pairs.
-     * @memberof module:mcfud/algo_basic
-     * @class
-     */
-    class BTree{
-      // max children per B-tree node = M-1 (must be even and greater than 2)
-      static M = 4;
-      Node(k){
-        return{
-          m:k,    // number of children
-          children: new Array(BTree.M) // children
-        }
-      }
-      // internal nodes: only use key and next external nodes: only use key and value
-      Entry(key,val,next=UNDEF){ return{ key, val, next } }
-      constructor(compareFn){
-        //* @property {number} height  height of tree
-        //* @property {number} n  number of key-value pairs in the B-tree
-        //* @property {object} root root of tree
-        this.root = this.Node(0);
-        this.compare=compareFn;
-        this._height=0;
-        this.n=0;
-      }
-      /**Returns true if this symbol table is empty.
-       * @return {boolean}
-       */
-      isEmpty(){
-        return this.size() == 0;
-      }
-      /**Returns the number of key-value pairs in this symbol table.
-       * @return {number}
-       */
-      size(){
-        return this.n;
-      }
-      /**Returns the height of this B-tree (for debugging).
-       * @return {number}
-       */
-      height(){
-        return this._height;
-      }
-      /**Returns the value associated with the given key.
-       * @param  key the key
-       * @return {any}
-       */
-      get(key){
-        if(_.nichts(key)) throw Error("argument to get() is null");
-        return this._search(this.root, key, this._height);
-      }
-      _search(x, key, ht){
-        let cs = x.children;
-        // external node
-        if(ht == 0){
-          for(let j = 0; j < x.m; ++j)
-            if(this.compare(key, cs[j].key)==0) return cs[j].val;
-        }else{ // internal node
-          for(let j = 0; j < x.m; ++j)
-            if(j+1 == x.m ||
-               this.compare(key, cs[j+1].key)<0)
-              return this._search(cs[j].next, key, ht-1);
-        }
-      }
-      /**Inserts the key-value pair into the symbol table, overwriting the old value
-       * with the new value if the key is already in the symbol table.
-       * If the value is {@code undefined}, this effectively deletes the key from the symbol table.
-       * @param  {any} key the key
-       * @param  {any} val the value
-       */
-      put(key, val){
-        if(_.nichts(key)) throw Error("argument key to put() is null");
-        let t,u = this._insert(this.root, key, val, this._height);
-        this.n += 1;
-        if(!u) return;
-        // need to split root
-        t = this.Node(2);
-        t.children[0] = this.Entry(this.root.children[0].key, null, this.root);
-        t.children[1] = this.Entry(u.children[0].key, null, u);
-        this.root = t;
-        this._height+=1;
-      }
-      _insert(h, key, val, ht){
-        let j,
-            t = this.Entry(key, val);
-        if(ht == 0){
-          for(j = 0; j < h.m; ++j)
-            if(this.compare(key, h.children[j].key)<0) break;
-        }else{ // internal node
-          for(j = 0; j < h.m; ++j){
-            if((j+1 == h.m) ||
-               this.compare(key, h.children[j+1].key)<0){
-              let u = this._insert(h.children[j++].next, key, val, ht-1);
-              if(!u) return null;
-              t.key = u.children[0].key;
-              t.val = null;
-              t.next = u;
-              break;
-            }
-          }
-        }
-        for(let i = h.m; i > j; --i)
-          h.children[i] = h.children[i-1];
-        h.children[j] = t;
-        h.m++;
-        if(h.m >= BTree.M) return this._split(h);
-      }
-      // split node in half
-      _split(h){
-        let m2=int(BTree.M/2),
-            t = this.Node(m2);
-        h.m = m2;
-        for(let j = 0; j < m2; ++j)
-          t.children[j] = h.children[m2+j];
-        return t;
-      }
-      /**Returns a string representation of this B-tree (for debugging).
-       * @return {string}
-       */
-      toString(){
-        function _s(h, ht, indent){
-          let s= "", cs= h.children;
-          if(ht == 0){
-            for(let j = 0; j < h.m; ++j)
-              s+= `${indent}${cs[j].key} ${cs[j].val}\n`;
-          }else{
-            for(let j = 0; j < h.m; ++j){
-              if(j > 0)
-                s+= `${indent}(${cs[j].key})\n`;
-              s+= _s(cs[j].next, ht-1, indent+"     ");
-            }
-          }
-          return s;
-        }
-        return _s(this.root, this._height, "") + "\n";
-      }
-      static test(){
-        let st = new BTree(CMP);
-        st.put("www.cs.princeton.edu", "128.112.136.12");
-        st.put("www.cs.princeton.edu", "128.112.136.11");
-        st.put("www.princeton.edu",    "128.112.128.15");
-        st.put("www.yale.edu",         "130.132.143.21");
-        st.put("www.simpsons.com",     "209.052.165.60");
-        st.put("www.apple.com",        "17.112.152.32");
-        st.put("www.amazon.com",       "207.171.182.16");
-        st.put("www.ebay.com",         "66.135.192.87");
-        st.put("www.cnn.com",          "64.236.16.20");
-        st.put("www.google.com",       "216.239.41.99");
-        st.put("www.nytimes.com",      "199.239.136.200");
-        st.put("www.microsoft.com",    "207.126.99.140");
-        st.put("www.dell.com",         "143.166.224.230");
-        st.put("www.slashdot.org",     "66.35.250.151");
-        st.put("www.espn.com",         "199.181.135.201");
-        st.put("www.weather.com",      "63.111.66.11");
-        st.put("www.yahoo.com",        "216.109.118.65");
-        console.log("cs.princeton.edu:  " + st.get("www.cs.princeton.edu"));
-        console.log("hardvardsucks.com: " + st.get("www.harvardsucks.com"));
-        console.log("simpsons.com:      " + st.get("www.simpsons.com"));
-        console.log("apple.com:         " + st.get("www.apple.com"));
-        console.log("ebay.com:          " + st.get("www.ebay.com"));
-        console.log("dell.com:          " + st.get("www.dell.com"));
-        console.log("");
-        console.log("size:    " + st.size());
-        console.log("height:  " + st.height());
-        console.log(st.toString());
-        console.log("");
-      }
-    }
-    //BTree.test();
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**Represents a <em>d</em>-dimensional mathematical vector.
-     *  Vectors are mutable: their values can be changed after they are created.
-     *  It includes methods for addition, subtraction,
-     *  dot product, scalar product, unit vector, and Euclidean norm.
-     * @memberof module:mcfud/algo_basic
-     * @class
-     */
-    class SparseVector{
-      /**Initializes a d-dimensional zero vector.
-       * @param {number} d the dimension of the vector
-       */
-      constructor(d){
-        //* @property {number} d  dimension
-        //* @property {ST} st the vector, represented by index-value pairs
-        this.d  = d;
-        this.st = new ST();
-      }
-     /**Sets the ith coordinate of this vector to the specified value.
-       * @param  {number} i the index
-       * @param  {number} value the new value
-       */
-      put(i, value){
-        if(i < 0 || i >= this.d) throw Error("Illegal index");
-        //by definition, only store nonzero data
-        if(_.feq0(value)) this.st.remove(i);
-        else this.st.put(i, value);
-      }
-      /**Returns the ith coordinate of this vector.
-       * @param  {number} i the index
-       * @return {number} the value of the ith coordinate of this vector
-       */
-      get(i){
-        if(i < 0 || i >= this.d) throw Error("Illegal index");
-        return this.st.contains(i)? this.st.get(i): 0;
-      }
-      /**Returns the number of nonzero entries in this vector.
-       * @return {number}
-       */
-      nnz(){
-        return this.st.size();
-      }
-      /**Returns the dimension of this vector.
-       * @return {number}
-       */
-      dimension(){
-        return this.d;
-      }
-      /**Returns the inner product of this vector with the specified vector.
-       * @param  {SparseVector} that the other vector
-       * @return {number} the dot product between this vector and that vector
-       */
-      dot(that){
-        _.assert(that instanceof SparseVector, "expected SparseVector data");
-        if(this.d != that.d) throw Error("Vector lengths disagree");
-        // iterate over the vector with the fewest nonzeros
-        let i,sum=0,
-            it= (this.st.size() <= that.st.size()? this : that).st.keys();
-        while(it.hasNext()){
-          i=it.next();
-          if(that.st.contains(i)) sum += this.get(i) * that.get(i);
-        }
-        return sum;
-      }
-      /**Returns the inner product of this vector with the specified array.
-       * @param  {array} vec the array
-       * @return {number} the dot product between this vector and that array
-       */
-      dotWith(vec){
-        let sum = 0;
-        for(let i,it= this.st.keys();it.hasNext();){
-          i=it.next();
-          sum += vec[i] * this.get(i);
-        }
-        return sum;
-      }
-      /**Returns the magnitude of this vector.
-       * This is also known as the L2 norm or the Euclidean norm.
-       * @return {number} the magnitude of this vector
-       */
-      magnitude(){
-        return Math.sqrt(this.dot(this));
-      }
-      /**Returns the scalar-vector product of this vector with the specified scalar.
-       * @param  {number} alpha the scalar
-       * @return {number} the scalar-vector product of this vector with the specified scalar
-       */
-      scale(alpha){
-        let c = new SparseVector(this.d);
-        for(let i,it= this.st.keys();it.hasNext();){
-          i=it.next();
-          c.put(i, alpha * this.get(i));
-        }
-        return c;
-      }
-      /**Returns the sum of this vector and the specified vector.
-       * @param  {SparseVector} that the vector to add to this vector
-       * @return {number} the sum of this vector and that vector
-       */
-      plus(that){
-        _.assert(that instanceof SparseVector, "expected SparseVector data");
-        if(this.d != that.d) throw Error("Vector lengths disagree");
-        let c = new SparseVector(this.d);
-        for(let i, it=this.st.keys();it.hasNext();){
-          i=it.next();
-          c.put(i, this.get(i)); // c = this
-        }
-        for(let i,it= that.st.keys();it.hasNext();){
-          i=it.next();
-          c.put(i, that.get(i) + c.get(i));     // c = c + that
-        }
-        return c;
-      }
-      /**Returns a string representation of this vector.
-       * @return {string}
-       */
-      toString(){
-        let s="";
-        for(let i,it= this.st.keys();it.hasNext();){
-          i=it.next();
-          s+= `(${i}, ${this.st.get(i)}) `;
-        }
-        return s;
-      }
-      static test(){
-        let a = new SparseVector(10),
-            b = new SparseVector(10);
-        a.put(3, 0.50);
-        a.put(9, 0.75);
-        a.put(6, 0.11);
-        a.put(6, 0.00);
-        b.put(3, 0.60);
-        b.put(4, 0.90);
-        console.log("a = " + a.toString());
-        console.log("b = " + b.toString());
-        console.log("a dot b = " + a.dot(b));
-        console.log("a + b   = " + a.plus(b).toString());
-      }
-    }
-    //SparseVector.test();
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    const _$={
-      prnIter,
-      StdCompare:CMP,
-      BTree,Bag,Stack,Queue,ST,
-      TreeMap,SparseVector,Iterator
-    };
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    //export
-    return _$;
-  }
-
-  //export--------------------------------------------------------------------
-  if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"))
-  }else{
-    gscope["io/czlab/mcfud/algo/basic"]=_module
-  }
-
-})(this);
-
-
-
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright © 2013-2022, Kenneth Leung. All rights reserved.
-
-;(function(gscope,UNDEF){
-
-  "use strict";
-
-  /**Create the module.
-   */
-  function _module(Core,_M,Basic){
-
-    if(!Core) Core= gscope["io/czlab/mcfud/core"]();
-    if(!_M) _M= gscope["io/czlab/mcfud/math"]();
-    if(!Basic) Basic= gscope["io/czlab/mcfud/algo/basic"]();
     const {prnIter,Bag,Stack,Iterator,StdCompare:CMP}= Basic;
     const int=Math.floor;
     const {is,u:_}= Core;
@@ -1127,7 +145,7 @@
           // binary search to determine index j at which to insert a[i]
           lo = 0; hi = i; v = a[i];
           while(lo<hi){
-            mid = lo + _M.ndiv(hi-lo,2);
+            mid = lo + _.ndiv(hi-lo,2);
             if(less(v, a[mid],compareFn)) hi = mid;
             else lo = mid + 1;
           }
@@ -1189,7 +207,7 @@
        */
       static sort(a, compareFn){
         let n = a.length,
-            h=1, n3= _M.ndiv(n,3);
+            h=1, n3= _.ndiv(n,3);
         // 3x+1 increment sequence:  1, 4, 13, 40, 121, 364, 1093, ...
         while(h < n3) h = 3*h + 1;
         while(h >= 1){
@@ -1198,7 +216,7 @@
             for(let j=i; j>=h && less(a[j], a[j-h],compareFn); j -= h)
               exch(a, j, j-h);
           }
-          h= _M.ndiv(h,3);
+          h= _.ndiv(h,3);
         }
         return a;
       }
@@ -1252,7 +270,7 @@
     // mergesort a[lo..hi] using auxiliary array aux[lo..hi]
     function sortIndex(a, index, aux, lo, hi,C){
       if(hi<=lo){}else{
-        let mid = lo + _M.ndiv(hi-lo,2);
+        let mid = lo + _.ndiv(hi-lo,2);
         sortIndex(a, index, aux, lo, mid,C);
         sortIndex(a, index, aux, mid + 1, hi,C);
         mergeIndex(a, index, aux, lo, mid, hi,C);
@@ -1276,7 +294,7 @@
         // mergesort a[lo..hi] using auxiliary array aux[lo..hi]
         function _sort(a, aux, lo, hi,C){
           if(hi<=lo){}else{
-            let mid = lo + _M.ndiv(hi-lo,2);
+            let mid = lo + _.ndiv(hi-lo,2);
             _sort(a, aux, lo, mid,C);
             _sort(a, aux, mid + 1, hi,C);
             merge(a, aux, lo, mid, hi,C);
@@ -2063,14 +1081,14 @@
         this._sink(1);
         this.pq[this.n+1] = UNDEF;// to avoid loitering and help with garbage collection
         if((this.n>0) &&
-           (this.n== _M.ndiv(this.pq.length-1,4)))
-          this.pq= resize(_M.ndiv(this.pq.length,2),this.n,1,this.n+1,this.pq);
+           (this.n== _.ndiv(this.pq.length-1,4)))
+          this.pq= resize(_.ndiv(this.pq.length,2),this.n,1,this.n+1,this.pq);
         return min;
       }
       _swim(k){
-        while(k>1 && this._greater(_M.ndiv(k,2), k)){
-          exch(this.pq, k, _M.ndiv(k,2));
-          k=_M.ndiv(k,2);
+        while(k>1 && this._greater(_.ndiv(k,2), k)){
+          exch(this.pq, k, _.ndiv(k,2));
+          k=_.ndiv(k,2);
         }
       }
       _sink(k){
@@ -2205,8 +1223,8 @@
         this._sink(1);
         this.pq[this.n+1] = null;     // to avoid loitering and help with garbage collection
         if(this.n > 0 &&
-           this.n == _M.ndiv(this.pq.length-1,4))
-          this.pq=resize(_M.ndiv(this.pq.length,2), this.n, 1, this.n+1, this.pq);
+           this.n == _.ndiv(this.pq.length-1,4))
+          this.pq=resize(_.ndiv(this.pq.length,2), this.n, 1, this.n+1, this.pq);
         return max;
       }
       _isMaxHeap(){
@@ -2224,9 +1242,9 @@
         return this._isMaxHeapOrdered(left) && this._isMaxHeapOrdered(right);
       }
       _swim(k){
-        while(k>1 && less4(this.pq, _M.ndiv(k,2), k, this.comparator)){
-          exch(this.pq, k, _M.ndiv(k,2));
-          k= _M.ndiv(k,2);
+        while(k>1 && less4(this.pq, _.ndiv(k,2), k, this.comparator)){
+          exch(this.pq, k, _.ndiv(k,2));
+          k= _.ndiv(k,2);
         }
       }
       _sink(k){
@@ -2307,7 +1325,7 @@
         }
         let k,n=pq.length;
         // heapify phase
-        for(k = _M.ndiv(n,2); k >= 1; --k){
+        for(k = _.ndiv(n,2); k >= 1; --k){
           _sink4(pq, k, n, compareFn)
         }
         // sortdown phase
@@ -2500,9 +1518,9 @@
         this.qp[this.pq[j]] = j;
       }
       _swim(k){
-        while(k>1 && this._greater(_M.ndiv(k,2), k)){
-          this._exch(k, _M.ndiv(k,2));
-          k = _M.ndiv(k,2);
+        while(k>1 && this._greater(_.ndiv(k,2), k)){
+          this._exch(k, _.ndiv(k,2));
+          k = _.ndiv(k,2);
         }
       }
       _sink(k){
@@ -2726,9 +1744,9 @@
         this.qp[this.pq[j]] = j;
       }
       _swim(k){
-        while(k > 1 && this._less(_M.ndiv(k,2), k)) {
-          this._exch(k, _M.ndiv(k,2));
-          k = _M.ndiv(k,2);
+        while(k > 1 && this._less(_.ndiv(k,2), k)) {
+          this._exch(k, _.ndiv(k,2));
+          k = _.ndiv(k,2);
         }
       }
       _sink(k){
@@ -2810,8 +1828,7 @@
 
   //export--------------------------------------------------------------------
   if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"),
-                           require("../main/math"), require("./basic"))
+    module.exports=_module(require("@czlab/mcfud"))
   }else{
     gscope["io/czlab/mcfud/algo/sort"]=_module
   }
@@ -2832,7 +1849,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Copyright © 2013-2022, Kenneth Leung. All rights reserved.
+// Copyright © 2025, Kenneth Leung. All rights reserved.
 
 ;(function(gscope,UNDEF){
 
@@ -2840,12 +1857,14 @@
 
   /**Create the module.
    */
-  function _module(Core,_M,Basic,Sort){
+  function _module(Mcfud,Sort){
 
-    if(!Core) Core= gscope["io/czlab/mcfud/core"]();
-    if(!_M) _M= gscope["io/czlab/mcfud/math"]();
-    if(!Basic) Basic= gscope["io/czlab/mcfud/algo/basic"]();
+    const Basic= Mcfud ? Mcfud["Basic"] : gscope["io/czlab/mcfud/algo/basic"]();
+    const Core= Mcfud ? Mcfud["Core"] : gscope["io/czlab/mcfud/core"]();
+    const _M = Mcfud ? Mcfud["Math"] : gscope["io/czlab/mcfud/math"]();
+
     if(!Sort) Sort= gscope["io/czlab/mcfud/algo/sort"]();
+
     const {Bag,Stack,Queue,StdCompare:CMP,prnIter}= Basic;
     const {MinPQ}= Sort;
     const int=Math.floor;
@@ -4819,9 +3838,7 @@
 
   //export--------------------------------------------------------------------
   if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"),
-                           require("../main/math"),
-                           require("./basic"),require("./sort"))
+    module.exports=_module(require("@czlab/mcfud"), require("./sort"))
   }else{
     gscope["io/czlab/mcfud/algo/search"]=_module
   }
@@ -4842,7 +3859,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Copyright © 2013-2022, Kenneth Leung. All rights reserved.
+// Copyright © 2025, Kenneth Leung. All rights reserved.
 
 ;(function(gscope,UNDEF){
 
@@ -4850,12 +3867,12 @@
 
   /**Create the module.
    */
-  function _module(Core,_M,Basic,Sort){
+  function _module(Mcfud,Sort){
 
-    if(!Basic) Basic= gscope["io/czlab/mcfud/algo/basic"]();
+    const Basic= Mcfud ? Mcfud["Basic"] : gscope["io/czlab/mcfud/algo/basic"]();
+    const Core= Mcfud ? Mcfud["Core"] : gscope["io/czlab/mcfud/core"]();
+    const _M= Mcfud ? Mcfud["Math"] : gscope["io/czlab/mcfud/math"]();
     if(!Sort) Sort= gscope["io/czlab/mcfud/algo/sort"]();
-    if(!Core) Core= gscope["io/czlab/mcfud/core"]();
-    if(!_M) _M= gscope["io/czlab/mcfud/math"]();
 
     const {prnIter, TreeMap,Bag,Stack,Queue,ST,StdCompare:CMP}= Basic;
     const {IndexMinPQ,MinPQ}= Sort;
@@ -7204,9 +6221,7 @@
 
   //export--------------------------------------------------------------------
   if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"),
-                           require("../main/math"),
-                           require("./basic"), require("./sort"))
+    module.exports=_module(require("@/czlab/mcfud"), require("./sort"))
   }else{
     gscope["io/czlab/mcfud/algo/graph"]=_module
   }
@@ -8404,2146 +7419,9 @@
 
 	//export--------------------------------------------------------------------
   if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"))
+    module.exports=_module(require("@czlab/mcfud")["Core"])
   }else{
     gscope["io/czlab/mcfud/algo/NNetGA"]=_module
-  }
-
-})(this)
-
-
-
-/* Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * Copyright © 2013-2022, Kenneth Leung. All rights reserved. */
-
-;(function(gscope,UNDEF){
-
-  "use strict";
-
-  /**Create the module.
-   */
-  function _module(Core){
-
-    if(!Core) Core=gscope["io/czlab/mcfud/core"]();
-    const int=Math.floor;
-    const {u:_, is}= Core;
-
-    /**
-     * @module mcfud/algo/NEAT
-     */
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**
-     * @typedef {object} NeuronType
-     * @property {number} INPUT
-     * @property {number} HIDDEN
-     * @property {number} OUTPUT
-     * @property {number} BIAS
-     * @property {number} NONE
-     */
-    const NeuronType={
-      INPUT:0,
-      HIDDEN:1,
-      OUTPUT:2,
-      BIAS:3,
-      NONE:4
-    };
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**
-     * @typedef {object} InnovType
-     * @property {number} NEURON
-     * @property {number} LINK
-     */
-    const InnovType={
-      NEURON:0,
-      LINK:1
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**Select one of these types when updating the network if snapshot is chosen
-     * the network depth is used to completely flush the inputs through the network.
-     * active just updates the network each timestep.
-     * @typedef {object} RunType
-     * @property {number} SNAPSHOT
-     * @property {number} ACTIVE
-     */
-    const RunType={
-      SNAPSHOT:0,
-      ACTIVE:1
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    const Params={
-      numInputs: 0,
-      numOutputs: 0,
-      bias: -1,
-      //starting value for the sigmoid response
-      sigmoidResponse:1,
-      //number of times we try to find 2 unlinked nodes when adding a link.
-      numAddLinkAttempts:5,
-      //number of attempts made to choose a node that is not an input
-      //node and that does not already have a recurrently looped connection to itself
-      numTrysToFindLoopedLink: 5,
-      //the number of attempts made to find an old link to prevent chaining in addNeuron
-      numTrysToFindOldLink: 5,
-      //the chance, each epoch, that a neuron or link will be added to the genome
-      chanceAddLink:0.07,
-      chanceAddNode:0.03,
-      chanceAddRecurrentLink: -1,//0.05,
-      //mutation probabilities for mutating the weights
-      mutationRate:0.8,
-      maxWeightPerturbation:0.5,
-      probabilityWeightReplaced:0.1,
-      //probabilities for mutating the activation response
-      activationMutationRate:0.1,
-      maxActivationPerturbation:0.1,
-      //the smaller the number the more species will be created
-      compatibilityThreshold:0.26,
-      //during fitness adjustment this is how much the fitnesses of
-      //young species are boosted (eg 1.2 is a 20% boost)
-      youngFitnessBonus:1.3,
-      //if the species are below this age their fitnesses are boosted
-      youngBonusAgeThreshhold:10,
-      //number of population to survive each epoch. (0.2 = 20%)
-      survivalRate:0,
-      //if the species is above this age their fitness gets penalized
-      oldAgeThreshold:50,
-      //by this much
-      oldAgePenalty:0.7,
-      crossOverRate:0.7,
-      //how long we allow a species to exist without any improvement
-      numGensAllowedNoImprovement:15,
-      //maximum number of neurons permitted in the network
-      maxPermittedNeurons:100,
-      numBestElites:4
-    };
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**Create a numeric fitness object.
-     * @memberof module:mcfud/algo/NEAT
-     * @param {number} v
-     * @param {boolean} flipped
-     * @return {object}
-     */
-    function NumFitness(v,flip=false){
-      return{
-        value:v,
-        gt(b){
-          return flip? this.value < b.value: this.value > b.value
-        },
-        eq(b){
-          return this.value==b.value
-        },
-        lt(b){
-          return flip? this.value > b.value: this.value < b.value
-        },
-        score(){
-          return this.value
-        },
-        update(n){
-          this.value=n;
-        },
-        clone(){
-          return NumFitness(this.value, flip)
-        }
-      }
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    class NeuronGene{
-      /**
-       * @param {NeuronType} type
-       * @param {number[]} pos
-       * @param {boolean} r
-       */
-      constructor(type, pos=null, r=false){
-        this.pos= pos?pos.slice():[0,0];
-        //sets curvature of sigmoid
-        this.activation=1;
-        this.recurrent= r;
-        if(is.vec(type)){
-          this.id=type[0];
-          this.neuronType= type[1];
-        }else{
-          this.id=0;
-          this.neuronType= type;
-        }
-      }
-      clone(){
-        let c= new NeuronGene(this.neuronType);
-        c.id=this.id;
-        c.activation=this.activation;
-        c.recurrent=this.recurrent;
-        c.pos=this.pos.slice();
-        return c;
-      }
-      static from(id, type, pos=null, r=false){
-        return new NeuronGene([id,type],pos,r);
-      }
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    class LinkGene{
-      /**
-       * @param {number} from
-       * @param {number} to
-       * @param {number} iid
-       * @param {boolean} enable
-       * @param {number} w
-       * @param {boolean} rec
-       */
-      constructor(from, to, iid, enable=true, w=null, rec = false){
-        this.fromNeuron= from; //id
-        this.toNeuron= to; //id
-        this.innovationID= iid;
-        this.recurrent= rec===true;
-        this.enabled= enable !== false;
-        this.weight= w===null? _.randMinus1To1() : w;
-      }
-      clone(){
-        let c= new LinkGene();
-        c.fromNeuron= this.fromNeuron;
-        c.toNeuron= this.toNeuron;
-        c.innovationID= this.innovationID;
-        c.recurrent= this.recurrent;
-        c.enabled= this.enabled;
-        c.weight= this.weight;
-        return c;
-      }
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    class Innov{
-      /**
-       * @param {number} from
-       * @param {number} to
-       * @param {InnovType} t
-       * @param {number} iid
-       * @param {NeuronType} type
-       * @param {number[]} pos
-       */
-      constructor(from, to, t, iid, type=NeuronType.NONE, pos=null){
-        this.pos= pos?pos.slice():[0,0];
-        this.innovationID= iid;
-        this.innovationType=t;
-        this.neuronID= 0;
-        this.neuronType= type;
-        this.neuronIn= from; //id
-        this.neuronOut= to; //id
-      }
-      static from(neuron, innov_id){
-        let s= new Innov(-1,-1, null, innov_id,
-                         neuron.neuronType, neuron.pos);
-        s.neuronID=neuron.id;
-        return s;
-      }
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    //Given a neuron ID this function returns a clone of that neuron.
-    function createNeuronFromID(history,n){
-      let temp=NeuronGene.from(0,NeuronType.HIDDEN);
-      for(let cur,i=0; i<history.vecInnovs.length; ++i){
-        cur=history.vecInnovs[i];
-        if(cur.neuronID == n){
-          temp.neuronType = cur.neuronType;
-          temp.id = cur.neuronID;
-          temp.pos= cur.pos.slice();
-          return temp;
-        }
-      }
-      _.assert(false, "boom from createNeuronFromID");
-      //return temp;
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**Used to keep track of all innovations created during the populations
-     * evolution, adds all the appropriate innovations.
-     */
-    class InnovHistory{
-      /**
-       * @param {NeuronGene[]} neurons
-       * @param {LinkGene[]} genes
-       */
-      constructor(neurons,genes){
-        this.NEURON_COUNTER= neurons.length-1; // last known neuron id
-        this.INNOV_COUNTER=0;
-        this.vecInnovs= neurons.map(n=> Innov.from(n, this.nextIID())).concat(
-                        genes.map(g=> new Innov(g.fromNeuron, g.toNeuron, InnovType.LINK, this.nextIID())));
-      }
-      nextIID(){ return this.INNOV_COUNTER++ }
-      /**Checks to see if this innovation has already occurred. If it has it
-       * returns the innovation ID. If not it returns a negative value.
-       * @param {number} from
-       * @param {number} out
-       * @param {InnovType} type
-       * @return {number}
-       */
-      check(from, out, type){
-        let rc= this.vecInnovs.find(cur=> cur.neuronIn == from &&
-                                          cur.neuronOut == out &&
-                                          cur.innovationType == type);
-        return rc===undefined?-1: rc.innovationID;
-      }
-      /**Creates a new innovation.
-       * @param {number} from
-       * @param {number} to
-       * @param {InnovType} innovType
-       * @param {NeuronType} neuronType
-       * @param {number[]} pos
-       * @return {Innov}
-       */
-      create(from, to, innovType, neuronType=NeuronType.NONE, pos=null){
-        let i= new Innov(from, to, innovType, this.nextIID(), neuronType,  pos);
-        if(InnovType.NEURON==innovType){
-          i.neuronID= ++this.NEURON_COUNTER;
-        }
-        this.vecInnovs.push(i);
-        return i;
-      }
-      flush(){this.vecInnovs.length=0}
-      getNeuronID(inv){return this.vecInnovs[inv].neuronID}
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    class NLink{
-      /**
-       * @param {number} w
-       * @param {NNeuron} from
-       * @param {NNeuron} out
-       * @param {boolean} rec
-       */
-      constructor(w, from, out, rec=false){
-        this.weight=w;
-        this.from=from;
-        this.out=out;
-        this.recurrent= rec===true;
-      }
-      clone(){
-        let c= new NLink();
-        c.weight= this.weight;
-        c.from= this.from;
-        c.out= this.out;
-        c.recurrent= this.recurrent;
-        return c;
-      }
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    class NNeuron{
-      /**
-       * @param {NeuronType} type
-       * @param {number} id
-       * @param {number[]} pos
-       * @param {number} actResponse
-       */
-      constructor(type, id, pos, actResponse){
-        this.neuronType=type;
-        this.neuronID=id;
-        //sum weights*inputs
-        this.sumActivation=0;
-        this.output=0;
-        this.posX=0;
-        this.posY=0;
-        this.vecLinksIn=[];
-        this.vecLinksOut=[];
-        this.activation=actResponse;
-        this.pos= pos?pos.slice():[0,0];
-      }
-      clone(){
-        let c= new NNeuron();
-        c.neuronType=this.neuronType;
-        c.neuronID= this.neuronID;
-        c.output=this.output;
-        c.posX=this.posX;
-        c.posY=this.posY;
-        c.pos= this.pos.slice();
-        c.activation=this.activation;
-        c.sumActivation= this.sumActivation;
-        c.vecLinksIn=this.vecLinksIn.map(v=> v.clone());
-        c.vecLinksOut=this.vecLinksOut.map(v=> v.clone());
-        return c;
-      }
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    function sigmoid(netinput, response){
-      return 1 / ( 1 + Math.exp(-netinput / response))
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    class NeuralNet{
-      /**
-       * @param {NNeuron[]} neurons
-       * @param {number} depth
-       */
-      constructor(neurons, depth){
-        this.vecNeurons= neurons;//own it
-        this.depth=depth;
-      }
-      /**
-       * @return {NeuralNet}
-       */
-      clone(){
-        let c=new NeuralNet(null,this.depth);
-        c.vecNeurons= this.vecNeurons.map(n=> n.clone());
-        return c;
-      }
-      compute(inputs,type){
-        return this.update(inputs, type)
-      }
-      /**Update network for this clock cycle.
-       * @param {number[]} inputs
-       * @param {RunType} type
-       */
-      update(inputs, type=RunType.ACTIVE){
-        //if the mode is snapshot then we require all the neurons to be
-        //iterated through as many times as the network is deep. If the
-        //mode is set to active the method can return an output after just one iteration
-        let outputs=[],
-            flushCnt= type == RunType.SNAPSHOT ? this.depth:1;
-        for(let sum,n,i=0; i<flushCnt; ++i){
-          outputs.length=0;
-          n = 0;
-          //first set the outputs of the 'input' neurons to be equal
-          //to the values passed into the function in inputs
-          while(this.vecNeurons[n].neuronType == NeuronType.INPUT){
-            this.vecNeurons[n].output = inputs[n];
-            ++n;
-          }
-          _.assert(this.vecNeurons[n].neuronType==NeuronType.BIAS,"expecting BIAS node");
-          this.vecNeurons[n].output = 1; // set bias
-          //hiddens or outputs
-          ++n;
-          while(n < this.vecNeurons.length){
-            sum= this.vecNeurons[n].vecLinksIn.reduce((acc,k)=>{ return acc + k.weight * k.from.output },0);
-            //put sum thru the activation func & assign the value to this neuron's output
-            this.vecNeurons[n].output = sigmoid(sum, this.vecNeurons[n].activation);
-            if(this.vecNeurons[n].neuronType == NeuronType.OUTPUT){
-              outputs.push(this.vecNeurons[n].output)
-            }
-            ++n;
-          }
-        }
-        //the network needs to be flushed if this type of update is performed
-        //otherwise it is possible for dependencies to be built on the order
-        //the training data is presented
-        if(type == RunType.SNAPSHOT)
-          this.vecNeurons.forEach(n=> n.output=0);
-        /////
-        return outputs;
-      }
-      draw(gfx, cxLeft, cxRight, cyTop, cyBot){ }
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    class Genome{
-      /**A genome basically consists of a vector of link genes,
-       * a vector of neuron genes and a fitness score.
-       * @param {number} gid
-       * @param {number} inputs
-       * @param {number} outputs
-       * @param {NeuronGene[]} neurons (optional)
-       * @param {LinkGene[]} genes (optional)
-       */
-      constructor(gid, inputs, outputs, neurons=null, genes=null){
-        if(gid<0){return}//hack for cloning
-        let i,nid=0,
-            inputRowSlice = 1/(inputs+2),
-            outputRowSlice = 1/(outputs+1);
-        if(neurons && genes){
-          this.vecNeurons= neurons;//own it
-          this.vecLinks= genes;
-        }else{
-          this.vecNeurons= [];
-          this.vecLinks= [];
-          for(i=0; i<inputs; ++i)
-            this.vecNeurons.push(NeuronGene.from(nid++, NeuronType.INPUT, [(i+2)*inputRowSlice,0]));
-          this.vecNeurons.push(NeuronGene.from(nid++, NeuronType.BIAS, [inputRowSlice,0]));
-          for(i=0; i<outputs; ++i)
-            this.vecNeurons.push(NeuronGene.from(nid++, NeuronType.OUTPUT, [(i+1)*outputRowSlice,1] ));
-          //create the link genes, connect each input neuron to each output neuron and
-          for(i=0; i<inputs+1; ++i)
-            for(let j=0; j<outputs; ++j)
-              this.vecLinks.push(new LinkGene(this.vecNeurons[i].id,
-                                              this.vecNeurons[inputs+1+j].id, inputs+outputs+1+this.vecLinks.length));
-        }
-        this.nextNeuronID=nid;
-        this.fitness=NumFitness(0);
-        this.genomeID= gid;
-        //its fitness score after it has been placed into a species and adjusted accordingly
-        this.adjustedFitness=0;
-        //the number of offspring is required to spawn for the next generation
-        this.amountToSpawn=0;
-        this.numInputs=inputs;
-        this.numOutputs=outputs;
-        //keeps a track of which species this genome is in (only used for display purposes)
-        this.species=0;
-      }
-      /**Create a neural network from the genome.
-       * @param {number} depth
-       * @return {NeuralNet} newly created ANN
-       */
-      createPhenotype(depth){
-        let vs= this.vecNeurons.map(n=> new NNeuron(n.neuronType,
-                                                    n.id,
-                                                    n.pos,
-                                                    n.activation));
-        this.vecLinks.forEach(k=>{
-          if(k.enabled){
-            let t= vs[this.getIndex(k.toNeuron) ],
-                f= vs[this.getIndex(k.fromNeuron) ],
-                //create a link between those two neurons
-                //and assign the weight stored in the gene
-                z= new NLink(k.weight, f, t, k.recurrent);
-            //add new links to neuron
-            f.vecLinksOut.push(z);
-            t.vecLinksIn.push(z);
-          }
-        });
-        return new NeuralNet(vs, depth);
-      }
-      _randAny(){
-        return this.vecNeurons[_.randInt2(0, this.vecNeurons.length-1)]
-      }
-      _randNonInputs(){
-        return this.vecNeurons[_.randInt2(this.numInputs+1, this.vecNeurons.length-1)]
-      }
-      /**Create a new link with the probability of Params.chanceAddLink.
-       * @param {number} MutationRate
-       * @param {boolean} ChanceOfLooped
-       * @param {InnovHistory} history
-       * @param {number} numTrysToFindLoop
-       * @param {number} numTrysToAddLink
-       */
-      addLink(MutationRate, ChanceOfLooped, history, numTrysToFindLoop, numTrysToAddLink){
-        if(_.rand() > MutationRate)
-        return;
-        //define holders for the two neurons to be linked. If we have find two
-        //valid neurons to link these values will become >= 0.
-        let nid1 = -1,
-            nid2 = -1,
-            recurrent = false; //flag set if a recurrent link is selected (looped or normal)
-        //first test to see if an attempt shpould be made to create a
-        //link that loops back into the same neuron
-        if(_.rand() < ChanceOfLooped){
-          while(numTrysToFindLoop--){
-            let n=this._randNonInputs();
-            if(n.neuronType != NeuronType.BIAS &&
-               n.neuronType != NeuronType.INPUT && !n.recurrent){
-              nid1 = nid2 = n.id;
-              recurrent = n.recurrent = true;
-              break;
-            }
-          }
-        }else{
-          while(numTrysToAddLink--){
-            //choose two neurons, the second must not be an input or a bias
-            nid1 = this._randAny().id;
-            nid2 = this._randNonInputs().id;
-            //if(nid2 == 2){ continue; }//TODO: why2?????
-            if(nid1 == nid2 ||
-               this.duplicateLink(nid1, nid2)){
-              nid1 = nid2 = -1; // bad
-            }else{
-              break;
-            }
-          }
-        }
-        if(nid1 < 0 || nid2 < 0){}else{
-          //console.log("addlink!!!!!");
-          let id = history.check(nid1, nid2, InnovType.LINK);
-          if(this.vecNeurons[this.getIndex(nid1)].pos[1]>
-             this.vecNeurons[this.getIndex(nid2)].pos[1]){ recurrent = true }
-          if(id<0)
-            id= history.create(nid1, nid2, InnovType.LINK).innovationID;
-          this.vecLinks.push(new LinkGene(nid1, nid2, id, true, _.randMinus1To1(), recurrent));
-        }
-      }
-      /**Adds a neuron to the genotype by examining the network,
-       * splitting one of the links and inserting the new neuron.
-       * @param {number} MutationRate
-       * @param {InnovHostory} history
-       * @param {number} numTrysToFindOldLink
-       */
-      addNeuron(MutationRate, history, numTrysToFindOldLink){
-        if(_.rand() > MutationRate)
-        return;
-        let chosen=0, done=false,
-            fromNeuron, link1, link2, newNeuronID,
-            //first a link is chosen to split. If the genome is small the code makes
-            //sure one of the older links is split to ensure a chaining effect does
-            //not occur. Here, if the genome contains less than 5 hidden neurons it
-            //is considered to be too small to select a link at random
-            SizeThreshold = this.numInputs + this.numOutputs + 5;
-        if(this.vecLinks.length < SizeThreshold){
-          while(numTrysToFindOldLink--){
-            //choose a link with a bias towards the older links in the genome
-            chosen = _.randInt2(0, this.numGenes()-1-int(Math.sqrt(this.numGenes())));
-            fromNeuron = this.vecLinks[chosen].fromNeuron;
-            if(this.vecLinks[chosen].enabled    &&
-               !this.vecLinks[chosen].recurrent &&
-               this.vecNeurons[this.getIndex(fromNeuron)].neuronType != NeuronType.BIAS){
-              done = true;
-              break;
-            }
-          }
-          //failed
-          if(!done){ return }
-        }else{
-          while(!done){
-            chosen = _.randInt2(0, this.numGenes()-1);
-            fromNeuron = this.vecLinks[chosen].fromNeuron;
-            if(this.vecLinks[chosen].enabled &&
-               !this.vecLinks[chosen].recurrent &&
-               this.vecNeurons[this.getIndex(fromNeuron)].neuronType != NeuronType.BIAS){
-              done = true;
-            }
-          }
-        }
-        this.vecLinks[chosen].enabled = false;
-        //grab the weight from the gene (we want to use this for the weight of
-        //one of the new links so that the split does not disturb anything the
-        //NN may have already learned...
-        let originalWeight = this.vecLinks[chosen].weight,
-            from =  this.vecLinks[chosen].fromNeuron,
-            to   =  this.vecLinks[chosen].toNeuron,
-            //calculate the depth and width of the new neuron. We can use the depth
-            //to see if the link feeds backwards or forwards
-            newDepth = (this.vecNeurons[this.getIndex(from)].pos[1]+
-                        this.vecNeurons[this.getIndex(to)].pos[1]) /2,
-            newWidth = (this.vecNeurons[this.getIndex(from)].pos[0]+
-                        this.vecNeurons[this.getIndex(to)].pos[0]) /2,
-            //now see if this innovation has been created previously
-            iid = history.check(from, to, InnovType.NEURON);
-        /*it is possible for NEAT to repeatedly do the following:
-            1. Find a link. Lets say we choose link 1 to 5
-            2. Disable the link,
-            3. Add a new neuron and two new links
-            4. The link disabled in Step 2 maybe re-enabled when this genome
-               is recombined with a genome that has that link enabled.
-            5  etc etc
-        Therefore, this function must check to see if a neuron ID is already
-        being used. If it is then the function creates a new innovation
-        for the neuron. */
-        if(iid >= 0 && this.hasNeuron(history.getNeuronID(iid))) iid = -1;
-        if(iid < 0){
-          let new_innov= history.create(from, to,
-                                        InnovType.NEURON,
-                                        NeuronType.HIDDEN, [newWidth, newDepth]),
-              //n= NeuronGene.from(new_innov.neuronID, NeuronType.HIDDEN, [newWidth,newDepth]);
-              n= NeuronGene.from(this.nextNeuronID, NeuronType.HIDDEN, [newWidth,newDepth]);
-          new_innov.neuronID=n.id;
-          newNeuronID=n.id;
-
-          this.nextNeuronID++;
-          this.vecNeurons.push(n);
-
-          //Two new link innovations are required, one for each of the
-          //new links created when this gene is split.
-          link1 = history.create(from, newNeuronID, InnovType.LINK).innovationID;
-          this.vecLinks.push(new LinkGene(from, newNeuronID, link1, true, 1));
-          link2 = history.create(newNeuronID, to, InnovType.LINK).innovationID;
-          this.vecLinks.push(new LinkGene(newNeuronID, to, link2, true, originalWeight));
-        }else{
-          //console.log("add old neuron");
-          //this innovation has already been created so grab the relevant neuron
-          //and link info from the innovation database
-          newNeuronID = history.getNeuronID(iid);
-          link1 = history.check(from, newNeuronID, InnovType.LINK);
-          link2 = history.check(newNeuronID, to, InnovType.LINK);
-          //this should never happen because the innovations *should* have already occurred
-          if(link1 < 0 || link2 < 0)
-            _.assert(false, "Error in Genome::AddNeuron");
-          //now we need to create 2 new genes to represent the new links
-          this.vecLinks.push(new LinkGene(from, newNeuronID, link1, true, 1),
-                             new LinkGene(newNeuronID, to, link2, true, originalWeight));
-          this.vecNeurons.push(NeuronGene.from(newNeuronID, NeuronType.HIDDEN, [newWidth,newDepth]));
-        }
-      }
-      /**Given a neuron ID, find its position in vecNeurons.
-       * @param {number} neuron_id
-       * @return {number}
-       */
-      getIndex(neuron_id){
-        for(let i=0; i<this.vecNeurons.length; ++i){
-          if(this.vecNeurons[i].id == neuron_id)
-          return i
-        }
-        _.assert(false, "Error in Genome::getIndex");
-      }
-      /**
-       * @param {number} neuronIn
-       * @param {number} neuronOut
-       * @return {boolean} true if the link is already part of the genome
-       */
-      duplicateLink(neuronIn, neuronOut){
-        return this.vecLinks.some(k=> k.fromNeuron == neuronIn && k.toNeuron == neuronOut)
-      }
-      /**Tests to see if the parameter is equal to any existing neuron ID's.
-       * @param {number} id
-       * @return {boolean} true if this is the case.
-       */
-      hasNeuron(id){
-        return this.vecNeurons.some(n=> id== n.id)
-      }
-      /**
-       * @param {number} MutationRate
-       * @param {number} ProbNewWeight the chance that a weight may get replaced by a completely new weight.
-       * @param {number} maxPertubation the maximum perturbation to be applied
-       */
-      mutateWeights(MutationRate, ProbNewWeight, maxPertubation){
-        for(let i=0; i<this.vecLinks.length; ++i){
-          if(_.rand() < MutationRate){
-            if(_.rand() < ProbNewWeight){
-              this.vecLinks[i].weight = _.randMinus1To1() // new value
-            }else{
-              this.vecLinks[i].weight += _.randMinus1To1() * maxPertubation
-            }
-          }
-        }
-      }
-      /**Perturbs the activation responses of the neurons.
-       * @param {number} MutationRate
-       * @param {number} maxPertubation the maximum perturbation to be applied
-       */
-      mutateActivation(MutationRate, maxPertubation){
-        this.vecNeurons.forEach(n=>{
-          if(_.rand() < MutationRate)
-            n.activation += _.randMinus1To1() * maxPertubation
-        })
-      }
-      /**Find the compatibility of this genome with the passed genome.
-       * @param {Genome} genome
-       * @return {number}
-       */
-      calcCompatibility(genome){
-        //travel down the length of each genome counting the number of
-        //disjoint genes, the number of excess genes and the number of matched genes
-        let g1=0,g2=0,
-            numDisjoint= 0,
-            numExcess = 0,
-            numMatched = 0,
-            sumWeightDiff = 0;
-        while((g1 < this.vecLinks.length-1) ||
-              (g2 < genome.vecLinks.length-1)){
-          //genome2 longer so increment the excess score
-          if(g1 == this.vecLinks.length-1){ ++g2; ++numExcess; continue; }
-          //genome1 longer so increment the excess score
-          if(g2 == genome.vecLinks.length-1){ ++g1; ++numExcess; continue; }
-          let id1 = this.vecLinks[g1].innovationID,
-              id2 = genome.vecLinks[g2].innovationID;
-          if(id1 == id2){
-            ++g1; ++g2; ++numMatched;
-            sumWeightDiff += Math.abs(this.vecLinks[g1].weight - genome.vecLinks[g2].weight);
-          }else{
-            ++numDisjoint;
-            if(id1 < id2){ ++g1 }
-            else if(id1 > id2){ ++g2 }
-          }
-        }
-        const Disjoint = 1,
-              Excess   = 1,
-              Matched  = 0.4,
-              longest= Math.max(this.numGenes(), genome.numGenes());
-        let xxx= (Excess * numExcess/longest) + (Disjoint * numDisjoint/longest);
-        return numMatched>0 ? xxx + (Matched * sumWeightDiff/ numMatched) : xxx;
-      }
-      sortGenes(){
-        this.vecLinks.sort((a,b)=>{
-          return a.innovationID < b.innovationID?-1:(a.innovationID > b.innovationID?1:0)
-        });
-        return this;
-      }
-      id(){return this.genomeID}
-      setID(val){this.genomeID = val}
-      numGenes(){return this.vecLinks.length}
-      numNeurons(){return this.vecNeurons.length}
-      setFitness(num){this.fitness = NumFitness(num)}
-      splitY(val){return this.vecNeurons[val].pos[1]}
-      genes(){return this.vecLinks}
-      neurons(){return this.vecNeurons}
-      startOfGenes(){return 0}
-      endOfGenes(){return this.vecLinks.length}
-      clone(){
-        let src=this,
-            c=new Genome(-911);
-        c.fitness= src.fitness.clone();
-        c.genomeID= src.genomeID;
-        c.adjustedFitness= src.adjustedFitness;
-        c.amountToSpawn= src.amountToSpawn;
-        c.numInputs= src.numInputs;
-        c.numOutputs= src.numOutputs;
-        c.species= src.species;
-        c.vecNeurons= src.vecNeurons.map(v=> v.clone());
-        c.vecLinks= src.vecLinks.map(v=> v.clone());
-        return c;
-      }
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    class Species{
-      /**
-       * @param {Genome} firstOrg
-       */
-      constructor(sid, firstOrg){
-        this.speciesID= sid;
-        //generations since fitness has improved, we can use
-        //this info to kill off a species if required
-        this._gensNoImprovement=0;
-        //age of species
-        this._age=0;
-        //how many of this species should be spawned for the next population
-        this.spawnsRqd=0;
-        this.vecMembers= [firstOrg];
-        this._leader= firstOrg.clone();
-        //best fitness found so far by this species
-        this._bestFitness= firstOrg.fitness.score();
-      }
-      /**Adjusts the fitness of each individual by first
-       * examining the species age and penalising if old, boosting if young.
-       * Then we perform fitness sharing by dividing the fitness
-       * by the number of individuals in the species.
-       * This ensures a species does not grow too large.
-       */
-      adjustFitnesses(){
-        let score,total = 0;
-        this.vecMembers.forEach(m=>{
-          score = m.fitness.score();
-          if(this._age < Params.youngBonusAgeThreshhold){
-            //boost the fitness scores if the species is young
-            score *= Params.youngFitnessBonus
-          }
-          if(this._age > Params.oldAgeThreshold){
-            //punish older species
-            score *= Params.oldAgePenalty
-          }
-          total += score;
-          //apply fitness sharing to adjusted fitnesses
-          m.adjustedFitness = score/this.vecMembers.length;
-        })
-      }
-      /**Adds a new member to this species and updates the member variables accordingly
-       * @param {Genome} newMember
-       */
-      addMember(newMember){
-        if(newMember.fitness.score() > this._bestFitness){
-          this._bestFitness = newMember.fitness.score();
-          this._gensNoImprovement = 0;
-          this._leader = newMember.clone();
-        }
-        this.vecMembers.push(newMember);
-        newMember.species= this.id();
-      }
-      /**Clears out all the members from the last generation, updates the age and gens no improvement.
-       */
-      purge(){
-        this.vecMembers.length=0;
-        ++this._gensNoImprovement;
-        this.spawnsRqd = 0;
-        ++this._age;
-        return this;
-      }
-      /**Simply adds up the expected spawn amount for each individual
-       * in the species to calculate the amount of offspring
-       * this species should spawn.
-       */
-      calculateSpawnAmount(){
-        this.vecMembers.forEach(m=>{
-          this.spawnsRqd += m.amountToSpawn
-        })
-      }
-      /**Spawns an individual from the species selected at random
-       * from the best Params::dSurvivalRate percent.
-       * @return {Genome} a random genome selected from the best individuals
-       */
-      spawn(){
-        let n,baby;
-        if(this.vecMembers.length == 1){
-          baby = this.vecMembers[0]
-        }else{
-          n = int(Params.survivalRate * this.vecMembers.length)-1;
-          if(n<0)n=1;
-          baby = this.vecMembers[ _.randInt2(0, n) ];
-        }
-        return baby.clone();
-      }
-      id(){return this.speciesID}
-      bestFitness(){return this._bestFitness }
-      age(){return this._age}
-      leader(){return this._leader}
-      numToSpawn(){return this.spawnsRqd}
-      numMembers(){return this.vecMembers.length}
-      gensNoImprovement(){return this._gensNoImprovement}
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    function sortSpecies(s){
-      return s.sort((lhs,rhs)=>{
-        //so we can sort species by best fitness. Largest first
-        return lhs._bestFitness > rhs._bestFitness?-1:(
-          lhs._bestFitness < rhs._bestFitness?1:0
-        )
-      })
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**A recursive function used to calculate a lookup table of split depths.
-     */
-    function split(low, high, depth, out){
-      const span = high-low;
-      out.push({val: low + span/2, depth: depth+1});
-      if(depth > 6){
-      }else{
-        split(low, low+span/2, depth+1, out);
-        split(low+span/2, high, depth+1, out);
-      }
-      return out;
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    class NeatGA{
-      /**Creates a base genome from supplied values and creates a population
-       * of 'size' similar (same topology, varying weights) genomes.
-       * @param {number} size
-       * @param {number} inputs
-       * @param {number} outputs
-       */
-      constructor(size, inputs, outputs){
-        let dummy= new Genome(0,inputs, outputs);
-
-        //this holds the precalculated split depths. They are used
-        //to calculate a neurons x/y position for rendering and also
-        //for calculating the flush depth of the network when a
-        //phenotype is working in 'snapshot' mode.
-        //create the network depth lookup table
-        this.vecSplits = split(0, 1, 0, []);
-        this.vecBestGenomes=[];
-        this.vecSpecies=[];
-
-        this.SPECIES_COUNTER=0;
-        this.GENOME_COUNTER=0;
-
-        this.generation=0;
-        this.popSize=size;
-        //adjusted fitness scores
-        this.totFitAdj=0;
-        this.avFitAdj=0;
-        //index into the genomes for the fittest genome
-        this.fittestGenome=0;
-        this._bestEverFitness=0;
-        this.vecGenomes= _.fill(size, ()=> new Genome(this.nextGID(), inputs, outputs));
-        //create the innovation list. First create a minimal genome
-        this.innovHistory= new InnovHistory(dummy.neurons(), dummy.genes());
-      }
-      /**Resets some values ready for the next epoch, kills off
-       * all the phenotypes and any poorly performing species.
-       */
-      resetAndKill(){
-        this.totFitAdj = 0;
-        this.avFitAdj  = 0;
-        let L,tmp=[];
-        this.vecSpecies.forEach(s=>{
-          if(s.gensNoImprovement() > Params.numGensAllowedNoImprovement &&
-             s.bestFitness() < this._bestEverFitness){
-            //kill,delete it
-          }else{
-            //keep it
-            tmp.push(s.purge());
-          }
-        });
-        this.vecSpecies.length=0;
-        tmp.forEach(t=> this.vecSpecies.push(t));
-      }
-      /**Separates each individual into its respective species by calculating
-       * a compatibility score with every other member of the population and
-       * niching accordingly. The function then adjusts the fitness scores of
-       * each individual by species age and by sharing and also determines
-       * how many offspring each individual should spawn.
-       */
-      speciateAndCalculateSpawnLevels(){
-        let added = false;
-        this.vecGenomes.forEach(g=>{
-          for(let s=0; s<this.vecSpecies.length; ++s){
-            if(g.calcCompatibility(this.vecSpecies[s].leader()) <= Params.compatibilityThreshold){
-              this.vecSpecies[s].addMember(g);
-              added = true;
-              break;
-            }
-          }
-          if(!added)
-            this.vecSpecies.push(new Species(this.nextSID(), g));
-          added = false;
-        });
-        //now all the genomes have been assigned a species the fitness scores
-        //need to be adjusted to take into account sharing and species age.
-        this.vecSpecies.forEach(s=> s.adjustFitnesses())
-        //calculate new adjusted total & average fitness for the population
-        this.vecGenomes.forEach(g=> this.totFitAdj += g.adjustedFitness);
-        //////
-        this.avFitAdj = this.totFitAdj/this.vecGenomes.length;
-        //calculate how many offspring each member of the population should spawn
-        this.vecGenomes.forEach(g=> g.amountToSpawn=g.adjustedFitness / this.avFitAdj);
-        //calculate how many offspring each species should spawn
-        this.vecSpecies.forEach(s=> s.calculateSpawnAmount());
-      }
-      /**
-       * @param {Genome} mum
-       * @param {Genome} dad
-       */
-      crossOver(mum, dad){
-        const MUM=0, DAD=1;
-        //first, calculate the genome we will using the disjoint/excess
-        //genes from. This is the fittest genome.
-        let best;
-        //if they are of equal fitness use the shorter (because we want to keep
-        //the networks as small as possible)
-        if(mum.fitness.score() == dad.fitness.score()){
-          best=mum.numGenes() == dad.numGenes() ? (_.randSign()>0?DAD:MUM)
-                                                : (mum.numGenes() < dad.numGenes()?MUM :DAD)
-        }else{
-          best = mum.fitness.score() > dad.fitness.score() ? MUM : DAD
-        }
-        function addNeuronID(nid, vec){ if(vec.indexOf(nid)<0) vec.push(nid) }
-        //these vectors will hold the offspring's nodes and genes
-        let babyNeurons=[],
-            babyGenes=[],
-            vecNeurons=[],
-            //create iterators so we can step through each parents genes and set
-            //them to the first gene of each parent
-            //this will hold a copy of the gene we wish to add at each step
-            curMum=0,curDad=0,selectedGene;
-        //step through each parents genes until we reach the end of both
-        while(!(curMum == mum.endOfGenes() && curDad == dad.endOfGenes())){
-          if(curMum == mum.endOfGenes()&&curDad != dad.endOfGenes()){
-            //the end of mum's genes have been reached
-            if(best == DAD) selectedGene = dad.vecLinks[curDad];
-            ++curDad;
-          }else if(curDad == dad.endOfGenes() && curMum != mum.endOfGenes()){
-            //the end of dads's genes have been reached
-            if(best == MUM) selectedGene = mum.vecLinks[curMum];
-            ++curMum;
-          }else if(mum.vecLinks[curMum].innovationID < dad.vecLinks[curDad].innovationID){
-            if(best == MUM) selectedGene = mum.vecLinks[curMum];
-            ++curMum;
-          }else if(dad.vecLinks[curDad].innovationID < mum.vecLinks[curMum].innovationID){
-            if(best == DAD) selectedGene = dad.vecLinks[curDad];
-            ++curDad;
-          }else if(dad.vecLinks[curDad].innovationID == mum.vecLinks[curMum].innovationID){
-            selectedGene=_.rand() < 0.5 ? mum.vecLinks[curMum] : dad.vecLinks[curDad];
-            ++curMum;
-            ++curDad;
-          }
-          //add the selected gene if not already added
-          if(babyGenes.length == 0 ||
-             _.last(babyGenes).innovationID != selectedGene.innovationID){
-            babyGenes.push(selectedGene.clone())
-          }
-          //Check if we already have the nodes referred to in SelectedGene.
-          //If not, they need to be added.
-          addNeuronID(selectedGene.fromNeuron, vecNeurons);
-          addNeuronID(selectedGene.toNeuron, vecNeurons);
-        }
-        //now create the required nodes
-        vecNeurons.sort().forEach(n=> babyNeurons.push(createNeuronFromID(this.innovHistory,n)));
-        /////
-        return new Genome(this.nextGID(), mum.numInputs, mum.numOutputs, babyNeurons, babyGenes);
-      }
-      nextSID(){ return ++this.SPECIES_COUNTER}
-      nextGID(){ return ++this.GENOME_COUNTER }
-      /**
-       * @param {number} numComparisons
-       * @return {Genome}
-       */
-      tournamentSelection(comparisons){
-        let chosen = 0,
-            bestSoFar = 0;
-        //Select NumComparisons members from the population at random testing
-        //against the best found so far
-        for(let g,i=0, z=this.vecGenomes.length-1; i<comparisons; ++i){
-          g = _.randInt2(0, z);
-          if(this.vecGenomes[g].fitness.score() > bestSoFar){
-            chosen = g;
-            bestSoFar = this.vecGenomes[g].fitness.score();
-          }
-        }
-        return this.vecGenomes[chosen];
-      }
-      /**Searches the lookup table for the splitY value of each node
-       * in the genome and returns the depth of the network based on this figure.
-       * @param {Genome} gen
-       * @return {number}
-       */
-      calculateNetDepth(gen){
-        let maxSoFar = 0;
-        for(let nd=0; nd<gen.numNeurons(); ++nd){
-          for(let i=0; i<this.vecSplits.length; ++i)
-            if(gen.splitY(nd) == this.vecSplits[i].val &&
-               this.vecSplits[i].depth > maxSoFar){
-              maxSoFar = this.vecSplits[i].depth;
-            }
-        }
-        return maxSoFar + 2;
-      }
-      /**Sorts the population into descending fitness, keeps a record of the best
-       * n genomes and updates any fitness statistics accordingly.
-       */
-      sortAndRecord(scores){
-        this.vecGenomes.forEach((g,i)=> g.setFitness(scores[i]));
-        this.vecGenomes.sort((a,b)=>{
-          return a.fitness.score()>b.fitness.score()?-1:(a.fitness.score()<b.fitness.score()?1:0)
-        });
-        this._bestEverFitness = Math.max(this._bestEverFitness,this.vecGenomes[0].fitness.score());
-        //save the best
-        this.vecBestGenomes.length=0;
-        for(let i=0; i<Params.numBestElites; ++i)
-          this.vecBestGenomes.push(this.vecGenomes[i]);
-      }
-      /**Performs one epoch of the genetic algorithm and returns a vector of pointers to the new phenotypes.
-       * @param {number[]} fitnessScores
-       * @return {}
-       */
-      epoch(scores){
-        _.assert(scores.length == this.vecGenomes.length, "NeatGA::Epoch(scores/ genomes mismatch)!");
-        //reset appropriate values and kill off the existing phenotypes and any poorly performing species
-        this.resetAndKill();
-        //update and sort genomes and keep a record of the best performers
-        this.sortAndRecord(scores);
-        //separate the population into species of similar topology,
-        this.speciateAndCalculateSpawnLevels();
-        //this will hold the new population of genomes
-        let baby2,baby,newPop=[],numSpawnedSoFar = 0;
-        this.vecSpecies.forEach(spc=>{
-          if(numSpawnedSoFar<this.popSize){
-            let chosenBest= false,
-                numToSpawn = _.rounded(spc.numToSpawn());
-            while(numToSpawn--){
-              if(!chosenBest){
-                chosenBest=true;
-                baby = spc.leader().clone();
-              }else{
-                if(spc.numMembers() == 1){
-                  baby = spc.spawn()
-                }else{
-                  let numAttempts = 5,
-                      g2,g1 = spc.spawn();
-                  if(_.rand() < Params.crossOverRate){
-                    g2 = spc.spawn();
-                    while(g1.id() == g2.id() && (numAttempts--)){
-                      g2 = spc.spawn()
-                    }
-                    baby= g1.id() != g2.id() ? this.crossOver(g1, g2) : g1;
-                  }else{
-                    baby = g1
-                  }
-                }
-                baby.setID(this.nextGID());
-                //now mutate this baby
-                if(baby.numNeurons() < Params.maxPermittedNeurons)
-                  baby.addNeuron(Params.chanceAddNode,
-                                 this.innovHistory, Params.numTrysToFindOldLink);
-                //now there's the chance a link may be added
-                baby.addLink(Params.chanceAddLink,
-                             Params.chanceAddRecurrentLink,
-                             this.innovHistory,
-                             Params.numTrysToFindLoopedLink, Params.numAddLinkAttempts);
-                //mutate the weights
-                baby.mutateWeights(Params.mutationRate,
-                                   Params.probabilityWeightReplaced,
-                                   Params.maxWeightPerturbation);
-                baby.mutateActivation(Params.activationMutationRate,
-                                      Params.maxActivationPerturbation);
-              }
-              newPop.push(baby.sortGenes());
-              if(++numSpawnedSoFar == this.popSize){ numToSpawn = 0 }
-            }
-          }
-        });
-        //if there is an underflow due to the rounding error and the amount
-        //of offspring falls short of the population size additional children
-        //need to be created and added to the new population. This is achieved
-        //simply, by using tournament selection over the entire population.
-        if(numSpawnedSoFar < this.popSize){
-          //calculate amount of additional children required
-          let rqd = this.popSize - numSpawnedSoFar;
-          while(rqd--)
-            newPop.push(this.tournamentSelection(int(this.popSize/ 5)).clone());
-        }
-        //replace the current population with the new one
-        this.vecGenomes = newPop;
-        ++this.generation;
-        return this.createPhenotypes();
-      }
-      /**Cycles through all the members of the population and creates their phenotypes.
-       * @return {NeuralNet[]} the new phenotypes
-       */
-      createPhenotypes(){
-        return this.vecGenomes.map(g=> g.createPhenotype( this.calculateNetDepth(g)))
-      }
-      //renders the best performing species statistics and a visual aid
-      //showing the distribution.
-      renderSpeciesInfo(){}
-      numSpecies(){return this.vecSpecies.length}
-      bestEverFitness(){return this._bestEverFitness}
-      /**
-       * @return {NeuralNet[]} the n best phenotypes from the previous generation.
-       */
-      getBestPhenotypesFromLastGeneration(){
-        return this.vecBestGenomes.map((g,i)=> {
-          g.createPhenotype(this.calculateNetDepth(g))
-        })
-      }
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    const _$={
-      NeatGA, NeuralNet, Genome, NeuronGene, LinkGene, NLink, NNeuron, Species,
-      NumFitness, InnovHistory, NeuronType, InnovType, RunType,
-      configParams(options){
-        return _.inject(Params,options)
-      }
-    };
-
-    return _$;
-  }
-
-  //export--------------------------------------------------------------------
-  if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"))
-  }else{
-    gscope["io/czlab/mcfud/algo/NEAT"]=_module
-  }
-
-})(this)
-
-
-
-/* Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * Copyright © 2013-2022, Kenneth Leung. All rights reserved. */
-
-;(function(gscope,UNDEF){
-
-  "use strict";
-
-  /**Create the module.
-   */
-  function _module(Core){
-
-    if(!Core) Core=gscope["io/czlab/mcfud/core"]();
-    const int=Math.floor;
-    const {u:_, is}= Core;
-
-    /**
-     * @module mcfud/algo/NEAT2
-     */
-
-    const NeuronType={
-      INPUT:0, OUTPUT:1,BIAS:2,HIDDEN:3
-    };
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    /**Create a numeric fitness object.
-     * @memberof module:mcfud/algo/NEAT2
-     * @param {number} v
-     * @param {boolean} flipped
-     * @return {object}
-     */
-    function NumFitness(v,flip=false){
-      return{
-        value:v,
-        gt(b){
-          return flip? this.value < b.value: this.value > b.value
-        },
-        eq(b){
-          return this.value==b.value
-        },
-        lt(b){
-          return flip? this.value > b.value: this.value < b.value
-        },
-        score(){
-          return this.value
-        },
-        update(v){
-          this.value=v;
-        },
-        clone(){
-          return NumFitness(this.value, flip)
-        }
-      }
-    }
-
-    const NumFIT=NumFitness;
-    const Params={
-      BIAS:1,
-      nextInnovNo: 1,
-      superSpeed:1,
-      mutationRate:0.8,
-      crossOverRate:0.25,
-      probAddLink:0.07,
-      probAddNode:0.03,
-      probCancelLink:0.75,
-      probAddRecurrentLink: 0.05,
-      probWeightReplaced:0.1,
-      maxWeightPerturbation:1/50,
-      //how long we allow a species to exist without any improvement
-      noImprovementLimit:15,
-      excessCoeff: 1,
-      weightDiffCoeff: 0.5,
-      compatibilityThreshold : 3 //0.26
-    };
-
-    /**A connection between 2 nodes
-     * @class
-     */
-    class LinkGene{
-      /**
-       * @param {Neuron} from
-       * @param {Neuron} to
-       * @param {number} w
-       * @param {number} innovID
-       */
-      constructor(from, to, w, innovID){
-        this.innovNo = innovID;
-        this.fromNode = from;
-        this.toNode = to;
-        this.weight = w;
-        this.enabled = true;
-      }
-      /**
-       */
-      mutateWeight(){
-        if(_.rand()<Params.probWeightReplaced){
-          this.weight = _.randMinus1To1();
-        }else{
-          this.weight += _.randGaussian() * Params.maxWeightPerturbation;
-        }
-        if(this.weight>1){ this.weight=1 }
-        if(this.weight < -1){ this.weight = -1 }
-      }
-      clone(from, to){
-        let c= new LinkGene(from, to, this.weight, this.innovNo);
-        c.enabled = this.enabled;
-        return c;
-      }
-    }
-
-    /**Genetic history.
-     * @class
-     */
-    class InnovHistory{
-      /**
-       * @param {number} from
-       * @param {number} to
-       * @param {number} inno
-       * @param {number[]} innovationNos
-       */
-      constructor(from, to, inno, innovationNos){
-        this.fromNode = from;
-        this.toNode = to;
-        this.innovNumber = inno;
-        //the innovation numbers from the connections of the genome which first had this mutation
-        //this represents the genome and allows us to test if another genoeme is the same
-        //this is before this connection was added
-        this.innovNumbers = innovationNos.slice();
-      }
-      /**Check if the genome matches the original genome and
-       * the connection is between the same neurons.
-       * @param {Genome} genome
-       * @param {Neuron} from
-       * @param {Neuron} to
-       * @return {boolean}
-       */
-      matches(genome, from, to){
-        //if the number of connections are different then the genoemes aren't the same
-        if(genome.genes.length == this.innovNumbers.length &&
-           from.number == this.fromNode && to.number == this.toNode){
-          //check if all the innovation numbers match from the genome
-          for(let i=0; i<genome.genes.length; ++i){
-            if(!this.innovNumbers.includes(genome.genes[i].innovNo)){
-              return false
-            }
-          }
-          //if reached this far then the innovationNumbers match the genes
-          //and the connection is between the same nodes so it does match
-          return true;
-        }
-        return false;
-      }
-    }
-
-    /**
-     * @class
-     */
-    class Neuron{
-      /**
-       * @param {NeuronType} type
-       * @param {number} id
-       * @param {number} layer
-       */
-      constructor(type, id, layer=0){
-        this.outputConnections = []; //LinkGenes
-        this.layer = layer;
-        this.neuronType=type;
-        this.pos = [0,0];
-        this.number = id;
-        this.inputSum = 0; //current sum i.e. before activation
-        this.outputValue = 0; //after activation function is applied
-      }
-      /**The neuron sends its output to the inputs
-       * of the neurons its connected to.
-       * @return {Neuron} this
-       */
-      engage(){
-        //no sigmoid for the inputs and bias
-        if(this.layer != 0)
-          this.outputValue = this.sigmoid(this.inputSum);
-        for(let i=0; i<this.outputConnections.length; ++i){
-          //sum += (input[i] * weight[i])
-          if(this.outputConnections[i].enabled)
-            this.outputConnections[i].toNode.inputSum += this.outputConnections[i].weight * this.outputValue;
-        }
-        return this;
-      }
-      /**Activation function.
-       * @return {number} 1 or 0
-       */
-      stepFunction(x){
-        return x<0?0:1
-      }
-      /**Activation function.
-       * @return {number}
-       */
-      sigmoid(x){
-        //y=1/(1+e^(-x))
-        return 1 / (1 + Math.pow(Math.E, -4.9*x))
-      }
-      sigmoid2(netinput, response){
-        return 1 / ( 1 + Math.exp(-netinput / response))
-      }
-      /**Whether this neuron is connected to the `node`.
-       * @param {Neuron} node
-       * @return {boolean}
-       */
-      isConnectedTo(node){
-        let a,b;
-        if(node.layer<this.layer){
-          a=node;b=this;
-        }else if(node.layer>this.layer){
-          a=this; b=node;
-        }
-        if(a && b)
-          for(let i=0; i<a.outputConnections.length; ++i){
-            if(a.outputConnections[i].toNode === b) return true;
-          }
-        return false;
-      }
-      clone(){
-        return new Neuron(this.neuronType, this.number,this.layer)
-      }
-    }
-
-    /**
-     * @class
-     */
-    class Genome{
-      /**
-       * @param {number} inputs
-       * @param {number} outputs
-       * @param {boolean} crossOver
-       */
-      constructor(inputs, outputs, crossOver=false){
-        this.outputs = outputs;
-        this.fitness=NumFIT(0);
-        this.inputs = inputs;
-        this.layers = 2;
-        this.nextNode = 0;
-        //the phenotype
-        this.network = [];
-        //genes=== connections
-        this.genes = [];
-        //nodes=== neurons
-        this.nodes = crossOver? [] : this.ctor(inputs,outputs,[]);
-      }
-      ctor(inputs,outputs,nodes){
-        //make the inputs nodes
-        for(let i=0; i<inputs; ++i){
-          nodes.push(new Neuron(NeuronType.INPUT, i));
-          ++this.nextNode;
-        }
-        //and the output nodes
-        for(let i=0; i<outputs; ++i){
-          nodes.push(new Neuron(NeuronType.OUTPUT, i+inputs, 1));
-          ++this.nextNode;
-        }
-        //lock onto the BIAS node
-        this.biasNode = this.nextNode;
-        this.nextNode++;
-        nodes.push(new Neuron(NeuronType.BIAS, this.biasNode));
-        return nodes;
-      }
-      /**
-       * @param {object} x
-       * @return {Genome} this
-       */
-      bindTo(x){
-        this.husk=x;
-        return (x.brain=this);
-      }
-      /**Get the neuron with a matching number.
-       * @param {number} id
-       * @return {Neuron}
-       */
-      getNeuron(id){
-        return this.nodes.find(n=> n.number == id)
-      }
-      /**Build up the network.
-       * @return {Genome} this
-       */
-      connectNeurons(){
-        //clean slate
-        this.nodes.forEach(n=> n.outputConnections.length=0);
-        //then
-        this.genes.forEach(g=> g.fromNode.outputConnections.push(g));
-        return this;
-      }
-      /**Feeding in input values to the NN and returning output array
-       * @param {number[]} values
-       * @return {number[]}
-       */
-      update(values){
-        _.assert(this.network.length>0,"invalid network");
-        _.assert(values.length==this.inputs, "invalid input values");
-        for(let n,i=0; i<this.inputs; ++i){
-          n=this.nodes[i];
-          n.outputValue = values[i];
-          _.assert(n.neuronType==NeuronType.INPUT, "invalid input neuron");
-        }
-
-        //run it
-        this.nodes[this.biasNode].outputValue = Params.BIAS;
-        this.network.forEach(n=> n.engage());
-
-        //the outputs are this.nodes[inputs] to this.nodes [inputs+outputs-1]
-        const outs=[];
-        for(let n,i=0; i<this.outputs; ++i){
-          n=this.nodes[this.inputs + i];
-          outs[i] = n.outputValue;
-          _.assert(n.neuronType==NeuronType.OUTPUT, "invalid output neuron");
-        }
-
-        //reset all the this.nodes for the next feed forward
-        this.nodes.forEach(n=> n.inputSum = 0);
-
-        return outs;
-      }
-      compute(values){
-        return this.update(values)
-      }
-      /**Sets up the NN.
-       * @return {Genome} this
-       */
-      generateNetwork(){
-        this.connectNeurons();
-        _.cls(this.network);
-        //for each layer add the node in that layer,
-        //since layers cannot connect to themselves
-        //there is no need to order nodes within a layer
-        for(let y=0; y<this.layers; ++y)
-          for(let i=0; i<this.nodes.length; ++i)
-            if(this.nodes[i].layer == y) this.network.push(this.nodes[i]);
-        return this;
-      }
-      /**Mutate the NN by adding a new node, it does this by
-       * picking a random connection and disabling it then 2
-       * new connections are added 1 between the input node of
-       * the disabled connection and the new node and the other
-       * between the new node and the output of the disabled connection
-       * @param {InnovHistory[]} history
-       * @return {Genome} this
-       */
-      addNeuron(history){
-        if(this.genes.length == 0)
-          return this.addLink(history);
-        //////
-        let tries=10,rc =0;
-        if(this.genes.length>1)
-          rc=_.randInt(this.genes.length);
-        //don't want BIAS node
-        while(this.genes[rc].fromNode.neuronType==NeuronType.BIAS && tries>0){
-          rc=_.randInt(this.genes.length);
-          tries--;
-        }
-
-        if(tries<=0){
-          console.warn("failed to add neuron");
-          return this;
-        }
-
-        this.genes[rc].enabled = false;
-        ///
-        let cinv, newNode,
-            newNodeNo=this.nextNode;
-        this.nodes.push(new Neuron(NeuronType.HIDDEN,newNodeNo));
-        ++this.nextNode;
-        //add a new link to the new node with a weight = 1
-        newNode=this.getNeuron(newNodeNo);
-        cinv = this.getInnovNo(history, this.genes[rc].fromNode, newNode);
-        this.genes.push(new LinkGene(this.genes[rc].fromNode, newNode, 1, cinv));
-        cinv = this.getInnovNo(history, newNode, this.genes[rc].toNode);
-        //add a new link from the new node with a weight the same as the old connection
-        this.genes.push(new LinkGene(newNode, this.genes[rc].toNode, this.genes[rc].weight, cinv));
-        newNode.layer = 1+this.genes[rc].fromNode.layer;
-        ///
-        cinv = this.getInnovNo(history, this.nodes[this.biasNode], newNodeNo);
-        //connect the bias to the new node with a weight of 0
-        this.genes.push(new LinkGene(this.nodes[this.biasNode], newNode, 0, cinv));
-        //if the layer of the new node is equal to the layer of the output node of the old connection then a new layer needs to be created
-        //more accurately the layer numbers of all layers equal to or greater than this new node need to be incrimented
-        if(newNode.layer == this.genes[rc].toNode.layer){
-          //dont include this newest node
-          for(let i=0; i<this.nodes.length-1; ++i){
-            if(this.nodes[i].layer >= newNode.layer){
-              this.nodes[i].layer+=1;
-            }
-          }
-          ++this.layers;
-        }
-        return this.connectNeurons();
-      }
-      /**
-       * @param {InnovHistory[]} history
-       * @return {Genome} this
-       */
-      addLink(history){
-        if(this.fullyConnected()){
-          console.warn("addLink failed, too full");
-          return this;
-        }
-        let rn1 = _.randInt(this.nodes.length),
-            rn2 = _.randInt(this.nodes.length),
-            tries=10, cin,temp,badPair=(r1,r2)=>{
-              return this.nodes[r1].layer == this.nodes[r2].layer ||
-                     this.nodes[r1].isConnectedTo(this.nodes[r2])
-            };
-        while(badPair(rn1, rn2) && tries>0){
-          rn1 = _.randInt(this.nodes.length);
-          rn2 = _.randInt(this.nodes.length);
-          --tries;
-        }
-
-        if(tries<=0){
-          console.log("failed to add-link");
-          return this;
-        }
-
-        if(this.nodes[rn1].layer > this.nodes[rn2].layer){
-          temp = rn2;
-          rn2 = rn1;
-          rn1 = temp;
-        }
-        //get the innovation number of the connection
-        //this will be a new number if no identical genome has mutated in the same way
-        cin = this.getInnovNo(history, this.nodes[rn1], this.nodes[rn2]);
-        //add the connection with a random array
-        //changed this so if error here
-        this.genes.push(new LinkGene(this.nodes[rn1], this.nodes[rn2], _.randMinus1To1(), cin));
-        return this.connectNeurons();
-      }
-      /**Get the innovation number for the new mutation
-       * if this mutation has never been seen before then
-       * it will be given a new unique innovation number
-       * if this mutation matches a previous mutation then
-       * it will be given the same innovation number as the previous one
-       * @param {InnovHistory[]} history
-       * @param {Neuron} from
-       * @param {Neuron} to
-       * @return {number}
-       */
-      getInnovNo(history, from, to){
-        let isNew = true,
-            innovNo = Params.nextInnovNo;
-        for(let i=0; i<history.length; ++i){
-          if(history[i].matches(this, from, to)){
-            isNew = false;
-            //set the innovation number as the innovation number of the match
-            innovNo = history[i].innovNumber;
-            break;
-          }
-        }
-        //if the mutation is new then create an arrayList of varegers representing the current state of the genome
-        if(isNew){
-          //then add this mutation to the innovationHistory
-          history.push(new InnovHistory(from.number, to.number,
-                                        innovNo,
-                                        this.genes.map(g=> g.innovNo)));
-          Params.nextInnovNo+=1;
-        }
-        return innovNo;
-      }
-      /**Check whether the network is fully connected or not.
-       * @return {boolean}
-       */
-      fullyConnected(){
-        let maxConnections = 0,
-            nodesInLayers = _.fill(this.layers, 0);
-        this.nodes.forEach(n=> nodesInLayers[n.layer] += 1);
-        //for each layer the maximum amount of connections is the number in this layer * the number of this.nodes infront of it
-        //so lets add the max for each layer together and then we will get the maximum amount of connections in the network
-        for(let before, i=0; i<this.layers-1; ++i){
-          before = 0;
-          for(let j= i+1; j<this.layers; ++j){
-            before += nodesInLayers[j];
-          }
-          maxConnections += before*nodesInLayers[i];
-        }
-        //if the number of connections is equal to the max number of connections possible then it is full
-        return maxConnections <= this.genes.length;
-      }
-      /**
-       * @param {InnovHistory[]} history
-       * @return {Genome} this
-       */
-      mutate(history){
-        if(this.genes.length == 0)
-          this.addLink(history);
-
-        if(_.rand() < Params.mutationRate){
-          this.genes.forEach(g=> g.mutateWeight())
-        }
-
-        if(_.rand() < Params.probAddLink){
-          this.addLink(history)
-        }
-
-        //1% of the time add a node
-        if(_.rand() < Params.probAddNode){
-          this.addNeuron(history);
-        }
-
-        return this;
-      }
-      /**Called when this Genome is better that the other parent
-       * @param {Genome} parent2
-       * @return {Genome} new child
-       */
-      crossOver(parent2){
-        let isEnabled = [],  // bools
-            childGenes = [], // LinkGene
-            child = new Genome(this.inputs, this.outputs, true);
-        //copy of this
-        child.nextNode = this.nextNode;
-        child.layers = this.layers;
-        child.biasNode = this.biasNode;
-        //all inherited genes
-        let p2,setEnabled;
-        for(let i=0; i<this.genes.length; ++i){
-          setEnabled = true;
-          p2 = this.matchingGene(parent2, this.genes[i].innovNo);
-          if(p2 != -1){
-            if(!this.genes[i].enabled || !parent2.genes[p2].enabled){
-              if(_.rand() < Params.probCancelLink) setEnabled = false;
-            }
-            childGenes.push(_.rand() < 0.5 ? this.genes[i] : parent2.genes[p2]);
-          }else{
-            //disjoint or excess gene
-            childGenes.push(this.genes[i]);
-            setEnabled = this.genes[i].enabled;
-          }
-          isEnabled.push(setEnabled);
-        }
-        //since all excess and disjovar genes are inherrited from
-        //the more fit parent (this Genome) the childs structure is
-        //no different from this parent | with exception of dormant
-        //connections being enabled but this wont effect this.nodes
-        //so all the this.nodes can be inherrited from this parent
-        this.nodes.forEach(n=> child.nodes.push(n.clone()));
-        //clone all the connections
-        for(let i=0; i< childGenes.length; ++i){
-          child.genes.push(childGenes[i].clone(child.getNeuron(childGenes[i].fromNode.number),
-                                               child.getNeuron(childGenes[i].toNode.number)));
-          child.genes[i].enabled = isEnabled[i];
-        }
-        return child.connectNeurons();
-      }
-      /**Check whether or not there is a gene matching
-       * the input innovation number  in the input genome.
-       * @param {Genome} p
-       * @param {number} innov
-       * @return {number}
-       */
-      matchingGene(p, innov){
-        for(let i=0; i<p.genes.length; ++i){
-          if(p.genes[i].innovNo == innov) return i;
-        }
-        return -1;
-      }
-      /**Prints out info about the genome to the console
-       * @return {Genome} this
-       */
-      printGenome(){
-        console.log("Prvar genome  layers:" + this.layers);
-        console.log("bias node: " + this.biasNode);
-        console.log("this.nodes");
-        for(let i=0; i<this.nodes.length; ++i){
-          console.log(this.nodes[i].number + ",");
-        }
-        console.log("Genes");
-        for(let i=0; i<this.genes.length; ++i){
-          console.log("gene " + this.genes[i].innovNo +
-                      "From node " + this.genes[i].fromNode.number +
-                      "To node " + this.genes[i].toNode.number +
-                      "is enabled " + this.genes[i].enabled +
-                      "from layer " + this.genes[i].fromNode.layer +
-                      "to layer " + this.genes[i].toNode.layer + "weight: " + this.genes[i].weight);
-        }
-        return this;
-      }
-      /**Make a copy.
-       * @return {Genome}  new guy
-       */
-      clone(){
-        let c= new Genome(this.inputs, this.outputs, true);
-        this.nodes.forEach(n=> c.nodes.push(n.clone()));
-        //copy all the connections so that they connect the clone new this.nodes
-        this.genes.forEach(g=>{
-          c.genes.push(g.clone(c.getNeuron(g.fromNode.number),
-                               c.getNeuron(g.toNode.number)))
-        });
-        c.fitness=this.fitness.clone();
-        c.layers = this.layers;
-        c.nextNode = this.nextNode;
-        c.biasNode = this.biasNode;
-        return c.connectNeurons();
-      }
-      /**Draw the genome on the screen
-       * @return {Genome} this
-       */
-      drawGenome(startX, startY, w, h){
-        return this;
-      }
-    }
-
-    /**
-     * @class
-     */
-    class Species{
-      /**
-       * @param {Genome} p
-       */
-      constructor(p){
-        this.bestFitness = 0;
-        this.members = [];
-        this.rep;
-        this.staleness = 0; //how many generations the species has gone without an improvement
-        this.averageFitness = 0;
-        if(p){
-          //since it is the only one in the species it is by default the best
-          this.bestFitness = p.fitness.score();
-          this.members.push(p);
-          this.rep = p.clone();//champion
-        }
-      }
-      /**Check whether the parameter genome is in this species.
-       * @param {Genome} g
-       * @return {boolean}
-       */
-      compatible(g){
-        let excessAndDisjoint = this.getExcessDisjoint(g, this.rep),
-            averageWeightDiff = this.averageWeightDiff(g, this.rep),
-            compatibility, largeGenomeNormaliser = g.genes.length - 20;
-        if(largeGenomeNormaliser < 1){
-          largeGenomeNormaliser = 1
-        }
-        //compatibility formula
-        compatibility = (Params.excessCoeff * excessAndDisjoint / largeGenomeNormaliser) +
-                        (Params.weightDiffCoeff * averageWeightDiff);
-        return Params.compatibilityThreshold > compatibility;
-      }
-      /**
-       * @param {Genome} p
-       * @return {Species} this
-       */
-      add(p){
-        this.members.push(p);
-        return this;
-      }
-      /**Get the number of excess and disjoint genes between
-       * the 2 input genomes i.e. returns the number of genes which dont match.
-       * @param {Genome} brain1
-       * @param {Genome} brain2
-       * @return {number}
-       */
-      getExcessDisjoint(brain1, brain2){
-        let matching = 0;
-        for(let i=0; i< brain1.genes.length; ++i){
-          for(let j=0; j< brain2.genes.length; ++j){
-            if(brain1.genes[i].innovNo == brain2.genes[j].innovNo){
-              ++matching;
-              break;
-            }
-          }
-        }
-        //return no of excess and disjoint genes
-        return (brain1.genes.length + brain2.genes.length - 2*matching);
-      }
-      /**Get the avereage weight difference between matching genes in the input genomes
-       * @param {Genome} brain1
-       * @param {Genome} brain2
-       * @return {number}
-       */
-      averageWeightDiff(brain1, brain2){
-        if(brain1.genes.length == 0 ||
-           brain2.genes.length == 0) { return 0 }
-        let matching = 0,
-            totalDiff = 0;
-        for(let i=0; i< brain1.genes.length; ++i){
-          for(let j=0; j< brain2.genes.length; ++j){
-            if(brain1.genes[i].innovNo == brain2.genes[j].innovNo){
-              ++matching;
-              totalDiff += Math.abs(brain1.genes[i].weight - brain2.genes[j].weight);
-              break;
-            }
-          }
-        }
-        return matching == 0? 100: totalDiff / matching;
-      }
-      /**Sort via fitness.
-       */
-      sortAsc(){
-        this.members.sort((a,b)=>{
-          return a.fitness.score()>b.fitness.score()?-1:( a.fitness.score()<b.fitness.score()?1:0)
-        });
-        if(this.members.length == 0){
-          this.staleness = 200
-        }else if(this.members[0].fitness.score() > this.bestFitness){
-          this.bestFitness = this.members[0].fitness.score();
-          this.rep = this.members[0].clone();
-          this.staleness = 0;
-        }else{
-          ++this.staleness
-        }
-      }
-      /**
-       */
-      setAverage(){
-        this.averageFitness = this.members.reduce((acc,p)=>{ return acc + p.fitness.score() },0) / this.members.length;
-      }
-      /**Gets baby from the this.players in this species
-       * @param {InnovHistory[]} history
-       * @return {Genome} new guy
-       */
-      giveMeBaby(history){
-        let baby, select=()=>{
-          let total = this.members.reduce((acc,p)=>{
-            return acc + p.fitness.score()
-          },0),
-              sum = 0, slice = _.rand() * total;
-          for(let i=0; i< this.members.length; ++i){
-            sum += this.members[i].fitness.score();
-            if(sum > slice)
-              return this.members[i];
-          }
-          return this.members[0];
-        }
-        if(_.rand() < Params.crossOverRate){
-          baby = select().clone();
-        }else{
-          let par1 = select(),
-              par2 = select();
-          //the crossover function expects the highest fitness parent
-          //to be the object and the lowest as the argument
-          baby= par1.fitness.score() < par2.fitness.score() ? par2.crossOver(par1) : par1.crossOver(par2);
-        }
-        return baby.mutate(history);
-      }
-      /**Kills off bottom half of the species
-       */
-      cull(){
-        if(this.members.length > 2)
-          this.members.length= int(this.members.length / 2);
-      }
-      /**In order to protect unique this.players,
-       * the fitnesses of each player is divided by
-       * the number of this.players in the species that that player belongs to
-       */
-      fitnessSharing(){
-        this.members.forEach(p=>{
-          p.fitness.update(p.fitness.score()/this.members.length)
-        })
-      }
-    }
-
-    /**
-     * @class
-     */
-    class NeatGA{
-      /**
-       * @param {number} size
-       * @param {number} inputs
-       * @param {number} outputs
-       */
-      constructor(size,inputs,outputs){
-        this.history = [];
-        this.species = [];
-        this.gen = 1;
-        this.genomes = _.fill(size, (i,g)=>{
-          g=new Genome(inputs, outputs);
-          g.mutate(this.history);
-          return g.generateNetwork();
-        });
-      }
-      /**Cycles through all the members of the population and creates their phenotypes.
-       * @return {Genome[]} the current phenotypes
-       */
-      createPhenotypes(){
-        return this.genomes;
-      }
-      /**Called when all the players are dead and a new generation needs to be made.
-       */
-      epoch(scores){
-        let prevBest = this.gen==1? null: this.genomes[0];
-        this.speciate();
-        this.genomes.forEach((g,i)=>{ if(i>=0) g.fitness.update(scores[i]) });
-        this.sortSpecies();
-        this.resetAndKill();
-        let children = [],
-            numToSpawn,averageSum = this.getAvgFitnessSum();
-        this.species.forEach(s=>{
-          //add champion without any mutation
-          children.push(s.rep.clone());
-          //the number of children species is allowed,
-          //note -1 is because the champ is already added
-          numToSpawn = int(s.averageFitness/averageSum * this.genomes.length)-1;
-          for(let i=0; i< numToSpawn; ++i)
-            children.push(s.giveMeBaby(this.history));
-        });
-        if(!prevBest)
-          prevBest=this.species[0].rep;
-        if(children.length < this.genomes.length){
-          children.push(prevBest.clone())
-        }
-        //get babies from the best species
-        while(children.length < this.genomes.length)
-          children.push(this.species[0].giveMeBaby(this.history));
-        _.append(this.genomes, children, true);
-        this.gen +=1;
-        this.genomes.forEach(g=> g.generateNetwork());
-        return this.genomes;
-      }
-      /**Seperate genomes into species based on how similar they are
-       * to the leaders of each species in the previous run
-       */
-      speciate(){
-        this.species.forEach(s=> _.cls(s.members));
-        for(let f,g,i=0; i< this.genomes.length; ++i){
-          g=this.genomes[i];
-          f= false;
-          for(let s=0;s<this.species.length;++s){
-            if(this.species[s].compatible(g)){
-              this.species[s].add(g);
-              f= true;
-              break;
-            }
-          }
-          if(!f)
-            this.species.push(new Species(g));
-        }
-      }
-      /**Sorts the players within a specie and the species by their fitnesses
-       */
-      sortSpecies(){
-        //sort each species internally
-        this.species.forEach(s=> s.sortAsc());
-        //then sort species by the fitness of its best player
-        this.species.sort((a,b)=>{
-          return a.bestFitness>b.bestFitness?-1:( a.bestFitness<b.bestFitness?1:0)
-        });
-      }
-      /**Get the sum of each this.species average fitness
-       * @return {number}
-       */
-      getAvgFitnessSum(){
-        return this.species.reduce((acc,s)=>{
-          return acc + s.averageFitness
-        },0);
-      }
-      /**
-       */
-      resetAndKill(){
-        let temp=[];
-        this.species.forEach(s=>{
-          s.cull(); //kill bottom half
-          s.fitnessSharing(); //also while we're at it lets do fitness sharing
-          s.setAverage(); //reset averages because they will have changed
-        });
-        //rid of stale ones
-        for(let i=0; i<this.species.length; ++i){
-          if(i<2){
-            temp.push(this.species[i]);
-          }else if(this.species[i].staleness < Params.noImprovementLimit){
-            temp.push(this.species[i]); //keep it
-          }
-        }
-        _.append(this.species, temp, true);
-        //rid of bad
-        let avgSum = this.getAvgFitnessSum();
-        temp=[];
-        for(let i=0; i<this.species.length; ++i){
-          if(i<1){
-            temp.push(this.species[i])
-          }else if((this.species[i].averageFitness / avgSum * this.species.length)< 1){
-            //delete
-          }else{
-            temp.push(this.species[i]); //keep
-          }
-        }
-        _.append(this.species,temp,true);
-      }
-      massExtinction(){
-        if(this.species.length>5) this.species.slice(0,5);
-      }
-    }
-
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    const _$={
-      NeatGA, Genome, LinkGene, Neuron, Species,
-      NumFitness, InnovHistory,
-      configParams(options){
-        return _.inject(Params,options)
-      }
-    };
-
-    return _$;
-  }
-
-  //export--------------------------------------------------------------------
-  if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"))
-  }else{
-    gscope["io/czlab/mcfud/algo/NEAT2"]=_module
   }
 
 })(this)
@@ -10562,7 +7440,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Copyright © 2013-2022, Kenneth Leung. All rights reserved.
+// Copyright © 2025, Kenneth Leung. All rights reserved.
 
 ;(function(gscope,UNDEF){
 
@@ -10570,10 +7448,10 @@
 
   /**Create the module.
    */
-  function _module(Core,_M){
+  function _module(Mcfud){
 
-    if(!Core) Core= gscope["io/czlab/mcfud/core"]();
-    if(!_M) _M= gscope["io/czlab/mcfud/math"]();
+    const Core= Mcfud ? Mcfud["Core"] : gscope["io/czlab/mcfud/core"]();
+    const _M = Mcfud ? Mcfud["Math"] : gscope["io/czlab/mcfud/math"]();
 
     const {is,u:_}= Core;
 
@@ -10974,11 +7852,3319 @@
 
   //export--------------------------------------------------------------------
   if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"),
-                           require("../main/math"));
+    module.exports=_module(require("@czlab/mcfud"))
   }else{
     gscope["io/czlab/mcfud/algo/maze"]=_module
   }
+
+})(this);
+
+
+
+/* Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Copyright © 2025, Kenneth Leung. All rights reserved. */
+
+;(function(gscope,UNDEF){
+
+  "use strict";
+
+  /**Creates the module.
+   */
+  function _module(Core){
+
+    if(!Core) Core=gscope["io/czlab/mcfud/core"]();
+    const {u:_}=Core;
+
+    /**
+      * @module mcfud/algo/minimax
+      */
+
+    /**
+     * @memberof module:mcfud/algo/minimax
+     * @class
+     * @property {any} state
+     * @property {any} other
+     * @property {any} cur
+     */
+    class GFrame{
+      /**
+       * @param {any} cur
+       * @param {any} other
+       */
+      constructor(cur,other){
+        this.state= UNDEF;
+        this.other=other;
+        this.cur=cur;
+      }
+      /**Make a copy of this.
+       * @param {function} cp  able to make a copy of state
+       * @return {GFrame}
+       */
+      clone(cp){
+        const f= new GFrame();
+        f.state=cp(this.state);
+        f.other=this.other;
+        f.cur=this.cur;
+        return f;
+      }
+    }
+
+    /**Represents a game board.
+     * @memberof module:mcfud/algo/minimax
+     * @class
+     */
+    class GameBoard{
+      constructor(){
+        this.aiActor=UNDEF;
+      }
+      /**Get the function that copies a game state.
+       * @return {function}
+       */
+      getStateCopier(){}
+      /**Get the first move.
+       * @param {GFrame} frame
+       * @return {any}
+       */
+      getFirstMove(frame){}
+      /**Get the list of next possible moves.
+       * @param {GFrame} frame
+       * @return {any[]}
+       */
+      getNextMoves(frame){}
+      /**Calculate the score.
+       * @param {GFrame} frame
+       * @param {number} depth
+       * @param {number} maxDepth
+       * @return {number}
+       */
+      evalScore(frame,depth,maxDepth){}
+      /**Check if game is a draw.
+       * @param {GFrame} frame
+       * @return {boolean}
+       */
+      isStalemate(frame){}
+      /**Check if game is over.
+       * @param {GFrame} frame
+       * @return {boolean}
+       */
+      isOver(frame,move){}
+      /**Reverse previous move.
+       * @param {GFrame} frame
+       * @param {any} move
+       */
+      unmakeMove(frame, move){
+        if(!this.undoMove)
+          throw Error("Need Implementation");
+        this.switchPlayer(frame);
+        this.undoMove(frame, move);
+      }
+      //undoMove(frame, move){}
+      //doMove(frame, move){ }
+      /**Make a move.
+       * @param {GFrame} frame
+       * @param {any} move
+       */
+      makeMove(frame, move){
+        if(!this.doMove)
+          throw Error("Need Implementation!");
+        this.doMove(frame, move);
+        this.switchPlayer(frame);
+      }
+      /**Take a snapshot of current game state.
+       * @return {GFrame}
+       */
+      takeGFrame(){}
+      /**Switch to the other player.
+       * @param {GFrame} snap
+       */
+      switchPlayer(snap){
+        let t = snap.cur;
+        snap.cur= snap.other;
+        snap.other= t;
+      }
+      /**Get the other player.
+       * @param {any} pv player
+       * @return {any}
+       */
+      getOtherPlayer(pv){
+        if(pv === this.actors[1]) return this.actors[2];
+        if(pv === this.actors[2]) return this.actors[1];
+      }
+      /**Get the current player.
+       * @return {any}
+       */
+      getPlayer(){
+        return this.actors[0]
+      }
+      /**Run the algo and get a move.
+       * @param {any} seed
+       * @param {any} actor
+       * @return {any}  the next move
+       */
+      run(seed,actor){
+        this.getAlgoActor=()=>{ return actor }
+        this.syncState(seed,actor);
+        let pos= this.getFirstMove();
+        if(_.nichts(pos))
+          pos= _$.evalMiniMax(this);
+        return pos;
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    //+ve if AI wins
+    const _calcScore=(board,game,depth,maxDepth)=> board.evalScore(game,depth,maxDepth);
+
+    /**Implements the Min-Max (alpha-beta) algo.
+     * @param {GameBoard} board
+     * @param {GFrame} game
+     * @param {number} depth
+     * @param {number} maxDepth
+     * @param {number} alpha
+     * @param {number} beta
+     * @return {number}
+     */
+    function _miniMax(board, game, depth,maxDepth, alpha, beta, maxing){
+      if(depth==0 || board.isOver(game)){
+        return [_calcScore(board,game,depth,maxDepth),UNDEF]
+      }
+      ///////////
+      let state=game,
+          copier= board.getStateCopier(),
+          openMoves= _.shuffle(board.getNextMoves(game));
+      if(maxing){
+        let rc,pos,move,
+            bestMove=openMoves[0], maxValue = -Infinity;
+        for(let i=0; i<openMoves.length; ++i){
+          if(!board.undoMove){
+            _.assert(copier,"Missing state copier!");
+            game=state.clone(copier);
+          }
+          move=openMoves[i];
+          board.makeMove(game, move);
+					rc= _miniMax(board, game, depth-1, maxDepth, alpha, beta, !maxing)[0];
+          if(board.undoMove)
+            board.unmakeMove(game,move);
+					alpha = Math.max(rc,alpha);
+          if(rc > maxValue){
+						maxValue = rc;
+						bestMove = move;
+          }
+					if(beta <= alpha){break}
+        }
+        return [maxValue,bestMove];
+      }else{
+			  let rc,pos,move,
+            bestMove=openMoves[0], minValue = Infinity;
+        for(let i=0; i<openMoves.length; ++i){
+          if(!board.undoMove){
+            _.assert(copier, "Missing state copier!");
+            game=state.clone(copier);
+          }
+          move=openMoves[i];
+          board.makeMove(game, move);
+					rc = _miniMax(board, game, depth-1, maxDepth, alpha, beta, !maxing)[0];
+          if(board.undoMove)
+            board.unmakeMove(game, move);
+					beta = Math.min(rc,beta);
+          if(rc < minValue){
+						minValue = rc;
+						bestMove = move;
+          }
+					if(beta <= alpha){break}
+        }
+        return [minValue,bestMove];
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    const _$={
+      algo: "minimax",
+      GFrame,
+      GameBoard,
+      /**Make a move on the game-board using minimax algo.
+       * @memberof module:mcfud/algo/minimax
+       * @param {GameBoard} board
+       * @return {any} next best move
+       */
+      evalMiniMax(board){
+        const f= board.takeGFrame();
+        const d= board.depth;
+        let [score, move]= _miniMax(board, f, d,d, -Infinity, Infinity, true);
+        if(_.nichts(move))
+          console.log(`evalMiniMax: score=${score}, pos= ${move}`);
+        return move;
+      }
+    };
+
+    return _$;
+  }
+
+  //export--------------------------------------------------------------------
+  if(typeof module == "object" && module.exports){
+    module.exports=_module(require("@czlab/mcfud")["Core"])
+  }else{
+    gscope["io/czlab/mcfud/algo/minimax"]=_module
+  }
+
+})(this);
+
+
+/* Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Copyright © 2025, Kenneth Leung. All rights reserved. */
+
+;(function(gscope,UNDEF){
+
+  "use strict";
+
+  /**Creates the module.
+   */
+  function _module(Core){
+
+    if(!Core) Core=gscope["io/czlab/mcfud/core"]();
+    const {u:_}=Core;
+
+    /**
+      * @module mcfud/algo/negamax
+      */
+
+    /**
+     * @memberof module:mcfud/algo/negamax
+     * @class
+     * @property {any} lastBestMove
+     * @property {any} state
+     * @property {any} other
+     * @property {any} cur
+     */
+    class GFrame{
+      /**
+       * @param {any} cur
+       * @param {any} other
+       */
+      constructor(cur,other){
+        this.lastBestMove=UNDEF;
+        this.state= UNDEF;
+        this.other=other;
+        this.cur=cur;
+      }
+      /**Make a copy of this.
+       * @param {function} cp  able to make a copy of state
+       * @return {GFrame}
+       */
+      clone(cp){
+        const f= new GFrame();
+        f.state=cp(this.state);
+        f.lastBestMove=this.lastBestMove;
+        f.other=this.other;
+        f.cur=this.cur;
+        return f;
+      }
+    }
+
+    /**Represents a game board.
+     * @memberof module:mcfud/algo/negamax
+     * @class
+     */
+    class GameBoard{
+      constructor(){}
+      /**Get the function that copies a game state.
+       * @return {function}
+       */
+      getStateCopier(){}
+      /**Get the first move.
+       * @param {GFrame} frame
+       * @return {any}
+       */
+      getFirstMove(frame){}
+      /**Get the list of next possible moves.
+       * @param {GFrame} frame
+       * @return {any[]}
+       */
+      getNextMoves(frame){}
+      /**Calculate the score.
+       * @param {GFrame} frame
+       * @return {number}
+       */
+      evalScore(frame){}
+      /**Check if game is a draw.
+       * @param {GFrame} frame
+       * @return {boolean}
+       */
+      isStalemate(frame){}
+      /**Check if game is over.
+       * @param {GFrame} frame
+       * @return {boolean}
+       */
+      isOver(frame){}
+      /**Reverse previous move.
+       * @param {GFrame} frame
+       * @param {any} move
+       */
+      unmakeMove(frame, move){
+        if(!this.undoMove)
+          throw Error("Need Implementation");
+        this.switchPlayer(frame);
+        this.undoMove(frame, move);
+      }
+      //undoMove(frame, move){}
+      //doMove(frame, move){ }
+      /**Make a move.
+       * @param {GFrame} frame
+       * @param {any} move
+       */
+      makeMove(frame, move){
+        if(!this.doMove)
+          throw Error("Need Implementation!");
+        this.doMove(frame, move);
+        this.switchPlayer(frame);
+      }
+      /**Switch to the other player.
+       * @param {GFrame} frame
+       */
+      switchPlayer(snap){
+        let t = snap.cur;
+        snap.cur= snap.other;
+        snap.other= t;
+      }
+      /**Get the other player.
+       * @param {any} pv player
+       * @return {any}
+       */
+      getOtherPlayer(pv){
+        if(pv === this.actors[1]) return this.actors[2];
+        if(pv === this.actors[2]) return this.actors[1];
+      }
+      /**Get the current player.
+       * @return {any}
+       */
+      getPlayer(){
+        return this.actors[0]
+      }
+      /**Take a snapshot of current game state.
+       * @return {GFrame}
+       */
+      takeGFrame(){}
+      run(seed,actor){
+        this.getAlgoActor=()=>{ return actor }
+        this.syncState(seed,actor);
+        let pos= this.getFirstMove();
+        if(_.nichts(pos))
+          pos= _$.evalNegaMax(this);
+        return pos;
+      }
+    }
+
+    /** @ignore */
+    function _calcScore(board,game,depth,maxDepth){
+      //if the other player wins, then return a -ve else +ve
+      //maxer == 1 , minus == -1
+      let score=board.evalScore(game,depth,maxDepth);
+      /*
+      if(!_.feq0(score))
+        score -= 0.01*depth*Math.abs(score)/score;
+      return score;
+      */
+      return score * (1 + 0.001 * depth);
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    //option2
+    function _negaAlphaBeta(board, game, depth, maxDepth, alpha, beta){
+
+      if(depth==0 || board.isOver(game)){
+        return { depth, value: _calcScore(board,game,depth,maxDepth) }
+      }
+
+      let state=game,
+          copier= board.getStateCopier(),
+          openMoves= _.shuffle(board.getNextMoves(game));
+
+      for(let rc, move, i=0; i< openMoves.length; ++i){
+        move= openMoves[i];
+        if(!board.undoMove){
+          _.assert(copier, "Missing state copier!");
+          game= state.clone(copier);
+        }
+        board.makeMove(game, move);
+        rc = _negaAlphaBeta(board, game, depth-1,
+                                         maxDepth,
+                                         {value: -beta.value, move: beta.move},
+                                         {value: -alpha.value, move: alpha.move});
+        //now, roll it back
+        if(board.undoMove)
+          board.unmakeMove(game, move);
+        rc.value = -rc.value;
+        rc.move = move;
+        if(rc.value>alpha.value){
+          alpha = {value: rc.value, move: move, depth: rc.depth};
+        }
+        if(alpha.value >= beta.value){
+          return beta;
+        }
+      }
+
+      return JSON.parse(JSON.stringify(alpha));
+    }
+
+    /**Implements the NegaMax Min-Max algo.
+     * @see {@link https://github.com/Zulko/easyAI}
+     * @param {GameBoard} board
+     * @param {GFrame} game
+     * @param {number} depth
+     * @param {number} maxDepth
+     * @param {number} alpha
+     * @param {number} beta
+     * @return {number}
+     */
+    function _negaMax(board, game, depth,maxDepth,alpha, beta){
+
+      if(depth==0 || board.isOver(game)){
+        return [_calcScore(board,game,depth,maxDepth),null]
+      }
+
+      let openMoves = _.shuffle(board.getNextMoves(game)),
+          copier= board.getStateCopier(),
+          state=game,
+          bestValue = -Infinity,
+          bestMove = openMoves[0];
+
+      if(depth==maxDepth)
+        state.lastBestMove=bestMove;
+
+      for(let rc, move, i=0; i<openMoves.length; ++i){
+        if(!board.undoMove){
+          _.assert(copier, "Missing state copier!");
+          game=state.clone(copier);
+        }
+        move = openMoves[i];
+        //try a move
+        board.makeMove(game, move);
+        rc= - _negaMax(board, game, depth-1, maxDepth, -beta, -alpha)[0];
+        //now, roll it back
+        if(board.undoMove)
+          board.unmakeMove(game, move);
+        //how did we do ?
+        if(bestValue < rc){
+          bestValue = rc;
+          bestMove = move
+        }
+        if(alpha < rc){
+          alpha=rc;
+          if(depth == maxDepth)
+            state.lastBestMove = move;
+          if(alpha >= beta) break;
+        }
+      }
+
+      return [bestValue, state.lastBestMove];
+    }
+
+    const _$={
+      algo:"negamax",
+      GFrame,
+      GameBoard,
+      /**Make a move on the game-board using negamax algo.
+       * @memberof module:mcfud/algo/negamax
+       * @param {GameBoard} board
+       * @return {any} next best move
+       */
+      XXevalNegaMax(board){
+        const f= board.takeGFrame();
+        const d= board.depth;
+        let [score,move]= _negaMax(board, f, d,d, -Infinity, Infinity);
+        if(_.nichts(move))
+          console.log(`evalNegaMax: score=${score}, pos= ${move}, lastBestMove=${move}`);
+        return move;
+      },
+      evalNegaMax(board){
+        const f= board.takeGFrame();
+        const d= board.depth;
+        let {value, move} = _negaAlphaBeta(board, f, d, d, {value: -Infinity },
+                                                           {value: Infinity  });
+        if(_.nichts(move))
+          console.log(`evalNegaMax: score= ${value}, pos= ${move}`);
+        return move;
+      }
+    };
+
+    return _$;
+  }
+
+  //export--------------------------------------------------------------------
+  if(typeof module == "object" && module.exports){
+    module.exports=_module(require("@czlab/mcfud")["Core"])
+  }else{
+    gscope["io/czlab/mcfud/algo/negamax"]=_module
+  }
+
+})(this);
+
+
+/* Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Copyright © 2025, Kenneth Leung. All rights reserved. */
+
+;(function(gscope,UNDEF){
+
+  "use strict";
+
+  /**Create the module.
+   */
+  function _module(Mcfud){
+
+    const Core= Mcfud ? Mcfud["Core"] : gscope["io/czlab/mcfud/core"]();
+    const _M = Mcfud ? Mcfud["Math"] : gscope["io/czlab/mcfud/math"]();
+    const int=Math.floor;
+    const {u:_, is}= Core;
+
+    /**
+     * @module mcfud/algo/NEAT_CBullet
+     */
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**
+     * @typedef {object} NodeType
+     * @property {number} INPUT
+     * @property {number} HIDDEN
+     * @property {number} OUTPUT
+     * @property {number} BIAS
+     * @property {number} NONE
+     */
+    const NodeType={ INPUT: 0, OUTPUT: 1, BIAS:2, HIDDEN:3, NONE: 4 };
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**
+     * @typedef {object} LinkType
+     * @property {number} NEURON
+     * @property {number} LINK
+     */
+    const LinkType={ NEURON: 1, LINK: 2 };
+
+    ////////////////////////////////////////////////////////////////////////////
+    const Params={
+      nextInnov: 42,
+      BIAS: 1,
+      probMutateWeight: 0.1,
+      probMutateLink: 0.8,
+      probAddLink: 0.05,
+      probAddNode: 0.01,
+      probCancelLink: 0.75,
+      maxPerturbation: 50,
+      crossOverRate: 0.25,
+      staleLimit: 15,
+      //coefficients for testing compatibility
+      excessCoeff: 1,
+      weightDiffCoeff: 0.5,
+      compatibilityThreshold: 3
+    };
+
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**Links 2 neurons together - a Link Gene.
+     *
+     * @class
+     */
+    class Link{
+
+      #fromNode;
+      #toNode;
+      #innovID;
+      #weight;
+      #enabled;
+
+      get from(){ return this.#fromNode }
+      get to(){ return this.#toNode }
+      get weight(){ return this.#weight }
+      get innovID(){ return this.#innovID }
+      set weight(w){ this.#weight=w }
+      get enabled(){ return this.#enabled }
+
+      turnOff(){ this.#enabled=false; return this; }
+      turnOn(){ this.#enabled=true; return this; }
+      toggle(n){ this.#enabled=n; return this; }
+
+      /**
+       * @param {Node} from
+       * @param {Node} to
+       * @param {number} wt weight
+       * @param {number} innov
+       * @param {boolean} on
+       */
+      constructor(from, to, wt, innov, on=true){
+        this.#fromNode = from;
+        this.#toNode= to;
+        this.#weight=wt;
+        this.#innovID=innov;
+        this.#enabled = (on !== false);
+      }
+      /**
+       * @return
+       */
+      mutate(){
+        this.#weight= (_.rand() < Params.probMutateWeight) ? _.randMinus1To1() :
+                                       _M.clamp(-1, 1, this.#weight + _.randGaussian() / Params.maxPerturbation);
+        return this;
+      }
+      /**
+       * @param {Node} from
+       * @param {Node} to
+       * @return {Link}
+       */
+      clone(from,to){
+        return new Link(from, to, this.#weight, this.#innovID, this.#enabled)
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**Innovation is a particular change to a Genome's structure. Each time a
+     * genome undergoes a change, that change is recorded as an innovation and
+     * is stored in a global historical database.
+     * @class
+     */
+    class Innovation{
+
+      #fromID;
+      #toID;
+      #history;
+      #innovID;
+
+      /**
+       * @param {number} from
+       * @param {number} to
+       * @param {number} innov
+       * @param {number[]} history
+       */
+      constructor(from, to, innov, history){
+        this.#fromID = from;
+        this.#toID = to;
+        this.#innovID= innov;
+        _.append(this.#history=[], history,true);
+      }
+      /**
+       * @return {number} size of history
+       */
+      size(){ return this.#history.length }
+      /**
+       * @param {Genome} genome
+       * @param {Node} from
+       * @param {Node} to
+       * @return {boolean}
+       */
+      matches(genome, from, to){
+        return genome.size() == this.size() &&
+               from.id == this.#fromID && to.id == this.#toID && genome.match(this.#history)
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**Used to keep track of all innovations created during the populations
+     * evolution, adds all the appropriate innovations.
+     *
+     * @class
+     */
+    class InnovHistory{
+
+      #db;
+
+      /**
+      */
+      constructor(){
+        this.#db=[/* Innovation */];
+      }
+      /**
+       * @param {number} i index
+       * @return {Innovation}
+       */
+      getAt(i){
+        return this.#db[i]
+      }
+      /**
+       * @param {Function} cb
+       * @return {boolean}
+       */
+      find(cb){
+        return this.#db.find(cb)
+      }
+      /**
+       * @param {Innovation} h
+       * @return
+       */
+      append(h){
+        this.#db.push(h);
+        return this;
+      }
+    }
+
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**A neuron, part of a Genome.
+     *
+     * @class
+     */
+    class Node{
+
+      #outputValue;
+      #outputLinks;
+      #inputSum;
+      #layer;
+      #type;
+      #id;
+
+      get output(){ return this.#outputValue }
+      set output(n){ this.#outputValue=n }
+      get inputSum(){ return this.#inputSum }
+      get id(){ return this.#id }
+      get type(){ return this.#type }
+      get layer(){ return this.#layer }
+
+      /**Check relative positions of these 2 nodes.
+       * @static
+       * @param {Node} a
+       * @param {Node} b
+       * @return {number}
+       */
+      static checkSibling(a,b){
+        return a.layer<b.layer? -1 : (a.layer>b.layer?1:0)
+      }
+
+      /**Test if these Nodes are in the same layer.
+       * @return {boolean}
+       */
+      static isSibling(a,b){
+        return a.layer==b.layer
+      }
+
+      /**
+       * @param {number} id
+       * @param {NodeType} type
+       * @param {number} where layer
+       */
+      constructor(id, type, where){
+        this.#outputLinks= [/*Link*/];
+        this.#inputSum = 0;
+        this.#outputValue = 0;
+        this.#layer = where;
+        this.#type=type;
+        this.#id = id;
+      }
+      /**Move node to a different layer.
+       * @param {number} layer
+       * @return
+       */
+      moveTo(layer){
+        this.#layer=layer;
+        return this;
+      }
+      /**Resets everything.
+       * @return
+       */
+      flush(){
+        _.trunc(this.#outputLinks);
+        this.#outputValue=0;
+        this.#inputSum=0;
+        return this;
+      }
+      /**Change the value of total inputs.
+       * @param {number} n
+       * @return
+       */
+      resetInput(n){
+        this.#inputSum=n;
+        return this;
+      }
+      /**Add value to the total inputs.
+       * @param {number} n
+       * @return
+       */
+      addInput(n){
+        this.#inputSum += n;
+        return this;
+      }
+      /**Add a output connection - linking to another node.
+       * @param {Link} g
+       * @return
+       */
+      addOutLink(g){
+        this.#outputLinks.push(g);
+        return this;
+      }
+      /**Push value downstream to all the output connections.
+       * @return
+       */
+      activate(){
+        if(this.#layer != NodeType.INPUT)
+          this.#outputValue = this.#sigmoid(this.#inputSum);
+        this.#outputLinks.forEach(k=> k.enabled ? k.to.addInput(k.weight * this.#outputValue) : 0);
+        return this;
+      }
+      /**
+       * @param {number} x
+       * @return {number}
+       */
+      #sigmoid(x){
+        return 1.0 / (1.0 + Math.pow(Math.E, -4.9 * x));
+      }
+      /**Internal Only.
+       * @return {array} output links
+       */
+      _olinks(){ return this.#outputLinks }
+      /**Test if this node is connected to `node`.
+       * @param {Node} node
+       * @param {boolean}
+       */
+      isLinked(node){
+        let pos= Node.checkSibling(node,this);
+        if(pos<0)
+          return node._olinks().find(k=> k.to.id == this.id);
+        if(pos>0)
+          return this.#outputLinks.find(k=> k.to.id == node.id);
+        return false;
+      }
+      /**
+       * @return {Node}
+       */
+      clone() {
+        return new Node(this.#id, this.#type, this.#layer);
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**The NeuralNetwork
+     *
+     * @class
+     */
+    class Cerveau{
+
+      #outputs;
+      #bias;
+      #nodes;
+      #mesh;
+      #inputs;
+
+      /**
+       * @param {Genome}
+       */
+      constructor(g){
+        this.#nodes= g.copyNodes();
+        this.#mesh=[];
+        this.#inputs= this.#nodes.reduce((acc,n)=> n.type==NodeType.INPUT ? acc+1 : acc,0);
+        this.#outputs= this.#nodes.reduce((acc,n)=> n.type==NodeType.OUTPUT ? acc+1 : acc,0);
+        for(let y=0; y< g.depth; ++y){
+          this.#nodes.forEach(n=>{
+            if(n.type==NodeType.BIAS){
+              this.#bias=n;
+            }
+            n.layer==y ? this.#mesh.push(n) : 0
+          });
+        }
+        _.assert(this.#bias, `no bias? with depth= ${g.depth}`);
+      }
+      /**
+       * @see update
+       * @param {array} data
+       * @return {number}
+       */
+      compute(data){
+        return this.update(data)
+      }
+      /**Do some thinking, given this data.
+       *
+       * @param {array} data
+       * @return {number}
+       */
+      update(data){
+        _.assert(data.length==this.#inputs, `update: expecting ${this.#inputs} inputs but got ${data.length}`);
+        this.#nodes.forEach((n,i)=> n.type==NodeType.INPUT ? n.output= data[i] : 0);
+        this.#bias.output=Params.BIAS;
+        this.#mesh.forEach(n=> n.activate());
+        let outs= this.#nodes.reduce((acc,n)=> n.type==NodeType.OUTPUT ? acc.push(n.output)&&acc : acc, []);
+        this.#nodes.forEach(n=> n.resetInput(0));
+        return outs;
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**
+     * The whole set of nuclear DNA of an organism.
+     * Genetic information of a cell is stored in chemical form in DNA or RNA.
+     * The order of the nucleotide bases arranged in the polynucleotide chain determines
+     * the genetic instructions. A gene is a sequence stretch of nucleotides which
+     * encodes a specific protein. Humans have thousands of genes in their total DNA molecules.
+     * The entire nuclear DNA is called the genome of an organism. This DNA is packed into
+     * chromosome structures. All gene sequences are called non-repetitive DNA.
+     * A genome has many DNA sequences and these are called repetitive DNA.
+     * This repetitive DNA also has a function in the gene regulation.
+     * The key difference between gene and genome is that a gene is a locus on a
+     * DNA molecule whereas genome is a total nuclear DNA.
+     *
+     * @class
+     */
+    class Genome{
+
+      #nextNodeID;
+      #outputs;
+      #inputs;
+      #genes;
+      #nodes;
+      #layers;
+      #nnet;
+      #fitness;
+
+      get depth(){ return this.#layers }
+
+      /**
+       * @param {number} inputNos
+       * @param {number} outputNos
+       */
+      constructor(inputNos, outputNos){
+        this.#outputs = outputNos;
+        this.#inputs = inputNos;
+        this.#init();
+      }
+      /**
+      */
+      #init(){
+        this.#genes = [];
+        this.#nodes = [];
+        this.#layers = 0;
+        this.#nextNodeID = 1;
+        this.#fitness=0;
+      }
+      /**
+      */
+      build(){
+        this.#init();
+        /////[i,i,iiii,o,o,ooo,B]
+        for(let i=0; i<this.#inputs; ++i){
+          this.#nodes.push(new Node(this.#genNID(), NodeType.INPUT, 0));
+        }
+        this.#layers += 1;
+        for (let i=0; i<this.#outputs; ++i){
+          this.#nodes.push(new Node(this.#genNID(), NodeType.OUTPUT,1));
+        }
+        this.#layers += 1;
+        this.#nodes.push(new Node(this.#genNID(), NodeType.BIAS, 0));
+        return this;
+      }
+      /**Get the Link at this index.
+       * @param {number} i
+       * @return {Link}
+       */
+      geneAt(i){
+        return this.#genes[i];
+      }
+      /**Get the Node at this index.
+       * @param {number} i
+       * @return {Node}
+       */
+      nodeAt(i){
+        return this.#nodes[i];
+      }
+      /**Get the bias Node.
+       * @return {Node}
+       */
+      biasNode(){
+        return this.#nodes.find(n=>n.type==NodeType.BIAS)
+      }
+      /**A shallow copy of all the Nodes.
+       * @return {array}
+       */
+      copyNodes(){
+        return this.#nodes.map(n=> n)
+      }
+      /**True if nodes are not connected.
+       * @return {boolean}
+       */
+      isEmpty(){ return this.#genes.length==0 }
+      /**Count the number of Links.
+       * @return {number}
+       */
+      size(){ return this.#genes.length }
+      /**Get the fitness score.
+       * @return {number}
+       */
+      getScore(){
+        return this.#fitness;
+      }
+      /**Set the fitness score.
+       * @param {number} s
+       * @return
+       */
+      setScore(s){
+        this.#fitness=s;
+        return this;
+      }
+      /**Find Node with this id.
+       * @param {number} id
+       * @return {Node}
+       */
+      getNode(id){
+        return this.#nodes.find(n=> n.id == id);
+      }
+      /**
+      */
+      #amalgamate(){
+        this.#nodes.forEach(n=> n.flush());
+        this.#genes.forEach(g=> g.from.addOutLink(g));
+        return this;
+      }
+      /**Create the corresponding Phenotype.
+       * @return
+       */
+      reify(){
+        this.#amalgamate();
+        return new Cerveau(this);
+      }
+      /**Add another Link.
+       * @param {InnovHistory} innovDB
+       * @return
+       */
+      addLink(innovDB){
+        if(!this.#isPacked()){
+          let r1= _.randItem(this.#nodes);
+          let r2= _.randItem(this.#nodes);
+          let t,inv, _bad= (a,b)=> a.layer == b.layer || a.isLinked(b);
+
+          while(_bad(r1, r2)){
+            r1= _.randItem(this.#nodes);
+            r2= _.randItem(this.#nodes);
+          }
+          if(r1.layer > r2.layer){
+            t= r2; r2 = r1; r1 = t;
+          }
+          this.#genes.push(new Link(r1, r2, _.randMinus1To1(), this.getInnov(innovDB, r1, r2)));
+          this.#amalgamate();
+        }
+        return this;
+      }
+      /**Add another Node.
+       * @param {InnovHistory} innovDB
+       * @return
+       */
+      addNode(innovDB){
+        if(this.isEmpty()){ return this.addLink(innovDB) }
+        let inv,
+            newNode,
+            bias=this.biasNode(),
+            chosen = _.randItem(this.#genes);
+
+        while(chosen.from.id == bias.id && this.size() > 1){
+          chosen = _.randItem(this.#genes)
+        }
+        chosen.turnOff();
+
+        this.#nodes.push(newNode=new Node(this.#genNID(),NodeType.HIDDEN,2));
+        this.#genes.push(new Link(chosen.from, newNode, 1,
+                                  this.getInnov(innovDB, chosen.from, newNode)));
+        this.#genes.push(new Link(newNode, chosen.to, chosen.weight,
+                                  this.getInnov(innovDB, newNode, chosen.to)));
+        newNode.moveTo(chosen.from.layer+1);
+
+        this.#genes.push(new Link(bias, newNode, 0,
+                                  this.getInnov(innovDB, bias, newNode)));
+
+        if(Node.isSibling(newNode, chosen.to)){
+          for(let n,i=0; i<this.#nodes.length-1; ++i){ //dont include this newest node
+            n=this.#nodes[i];
+            if(Node.checkSibling(n,newNode)>=0){
+              n.moveTo(n.layer+1);
+            }
+          }
+          ++this.#layers;
+        }
+
+        return this.#amalgamate();
+      }
+      /**
+       * @param {InnovHistory} db
+       * @param {Node} from
+       * @param {Node} to
+       * @return {boolean}
+       */
+      getInnov(db, from, to){
+        let newID= Params.nextInnov,
+            found= db.find(h=> h.matches(this, from, to));
+        if(!found){
+          db.append(new Innovation(from.id, to.id, newID, this.#genes.map(g=> g.innovID)));
+          ++Params.nextInnov;
+        }
+        return found ? found.innovID : newID;
+      }
+      /**
+      */
+      #isPacked(){
+        let totalLinks=0,
+            nodesInLayers=[];
+        for(let i=0; i<this.#layers; ++i){
+          nodesInLayers[i] = 0;
+        }
+        this.#nodes.forEach(n=> nodesInLayers[ n.layer ] += 1);
+        //for each layer the maximum amount of connections is the number in this layer * the number of this.nodes infront of it
+        //so lets add the max for each layer together and then we will get the maximum amount of connections in the network
+        for(let ns, i=0; i<this.#layers-1; ++i){
+          ns = 0;
+          for(let j= i+1; j< this.#layers; ++j){ //for each layer infront of this layer
+            ns += nodesInLayers[j];
+          }
+          totalLinks += nodesInLayers[i] * ns;
+        }
+        return totalLinks <= this.size();
+      }
+      /**Maybe make some random changes to itself.
+       * @param {InnovHistory} innovDB
+       * @return
+       */
+      mutate(innovDB){
+        if(this.isEmpty()){
+          this.addLink(innovDB);
+        }
+        if(_.rand < Params.probMutateLink){
+          this.#genes.forEach(g=> g.mutate());
+        }
+        if(_.rand() < Params.probAddLink){
+          this.addLink(innovDB);
+        }
+        if(_.rand() < Params.probAddNode){
+          this.addNode(innovDB);
+        }
+        return this;
+      }
+      /**Internal Only
+       * @return
+       */
+      _introspect(){
+        let y=0, nid=0;
+        this.#nodes.forEach(n=>{
+          if(n.layer>y){ y = n.layer }
+          if(n.id>nid){ nid=n.id }
+        });
+        this.#nextNodeID=nid+1;
+        this.#layers=y+1;
+        return this;
+      }
+      /**Clone the incoming Node.
+       * @param {Node} n
+       * @return
+       */
+      cloneNode(n){
+        this.#nodes.push(n.clone());
+        return this;
+      }
+      /**Clone the incoming Link.
+       * @param {Link} g
+       * @param {boolean} en enable
+       * @return
+       */
+      cloneGene(g,en){
+        this.#genes.push(g.clone(this.getNode(g.from.id), this.getNode(g.to.id)).toggle(en));
+        return this;
+      }
+      /**Mate with this other Node.
+       * @param {Node} other
+       * @return {Node}
+       */
+      crossOver(other){
+        let isEnabled = [],
+            newGenes = [],
+            child = new Genome(this.#inputs, this.#outputs);
+        this.#genes.forEach(g=>{
+          let en = true;
+          let p2 = other.findGene(g.innovID);
+          if(p2){
+            if(!g.enabled || !p2.enabled){
+              if(_.rand() < Params.probCancelLink){
+                en = false;
+              }
+            }
+            newGenes.push(_.randAorB(g,p2));
+          }else{
+            //disjoint or excess gene
+            en = g.enabled;
+            newGenes.push(g);
+          }
+          isEnabled.push(en);
+        });
+        //since all excess and disjovar genes are inherrited from the more fit parent (this Genome) the childs structure is no different from this parent | with exception of dormant connections being enabled but this wont effect this.nodes
+        //so all the this.nodes can be inherrited from this parent
+        this.#nodes.forEach(n=> child.cloneNode(n));
+        //clone all the connections so that they connect the childs new this.nodes
+        newGenes.forEach((g,i)=> child.cloneGene(g, isEnabled[i]));
+        return child._introspect().#amalgamate();
+      }
+      /**Look for a Link with this innovation.
+       * @param {number} innov
+       * @return {Link}
+       */
+      findGene(innov){
+        return this.#genes.find(g=> g.innovID == innov);
+      }
+      /**
+       * @return {Genome}
+       */
+      clone(){
+        let rc= new Genome(this.#inputs, this.#outputs);
+        this.#nodes.forEach(n=> rc.cloneNode(n));
+        this.#genes.forEach(g=> rc.cloneGene(g, g.enabled));
+        return rc._introspect().#amalgamate();
+      }
+      /**Check if all the Links are recorded already in the history.
+       * @param {number[]} history
+       * @return {boolean}
+       */
+      match(history){
+        return this.#genes.every(g=> history.includes(g.innovID))
+      }
+      /**Count all matching Links
+       * @param {Genome} g2
+       * @return {number}
+       */
+      countMatching(g2){
+        let c=0;
+        this.#genes.forEach(g=> g2.findGene(g.innovID) ? ++c : 0);
+        return c;
+      }
+      /**
+      */
+      #genNID(){ return this.#nextNodeID++ }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**Species
+     * @class
+     */
+    class Species{
+
+      #bestScore;
+      #avgScore;
+      #members;
+      #alpha;
+      #stale;
+
+      get avgScore(){ return this.#avgScore }
+      get alpha(){ return this.#alpha }
+      get bestScore(){ return this.#bestScore }
+
+      /**
+       * @param {Genome}
+       */
+      constructor(g){
+        this.#bestScore = g.getScore();
+        this.#alpha = g.clone();
+        this.#members = [];
+        this.#avgScore=0;
+        this.#stale= 0;
+        this.#members.push(g);
+      }
+      /**Check `g`'s compatibility.'
+       * @param {Genome} g
+       * @return {boolean}
+       */
+      compatible(g){
+        let gdiff = this.#getNotMatched(g, this.#alpha);
+        let wdiff = this.#avgWeightDiff(g, this.#alpha);
+        let normaliser = g.size() - 20;
+        if(normaliser < 1){ normaliser = 1 }
+        //compatibility formula
+        return Params.compatibilityThreshold > (Params.excessCoeff * gdiff /normaliser + Params.weightDiffCoeff * wdiff);
+      }
+      /**Include this Genome into this specie.
+       * @param {Genome} g
+       * @return
+       */
+      add(g){
+        if(0 && g.getScore()>this.#bestScore){
+          this.#bestScore=g.getScore();
+          this.#alpha=g;
+        }
+        this.#members.push(g);
+      }
+      /**
+       * @param {Genome} g1
+       * @param {Genome} g2
+       * @return {number}
+       */
+      #getNotMatched(g1, g2){
+        return g1.size() + g2.size() - 2 * g1.countMatching(g2);
+      }
+      /**
+       * @param {Genome} g1
+       * @param {Genome} g2
+       * @return {number}
+       */
+      #avgWeightDiff(g1,g2){
+        let diff= 0, matched=0;
+        for(let i= 0; i < g1.size(); ++i){
+          for(let j= 0; j < g2.size(); ++j){
+            if(g1.geneAt(i).innovID == g2.geneAt(j).innovID){
+              ++matched;
+              diff += Math.abs(g1.geneAt(i).weight - g2.geneAt(j).weight);
+              break;
+            }
+          }
+        }
+        return matched==0 ? (g1.isEmpty()||g2.isEmpty()?0:100) : diff/matched;
+      }
+      /**Sort everything with `best` stuff in the front.
+       * @return
+       */
+      sort(){
+        this.#members.sort(_.comparator(_.SORT_DESC,a=>a.getScore(),b=>b.getScore()));
+        if(this.#members.length == 0){
+          this.#stale= 200;
+        }else if(this.#members[0].getScore() > this.#bestScore){
+          this.#bestScore= this.#members[0].getScore();
+          this.#alpha= this.#members[0].clone();
+          this.#stale = 0;
+        }else{
+          ++this.stale;
+        }
+        return this;
+      }
+      /**
+       * @return {boolean}
+       */
+      isEmpty(){ return this.#members.length==0 }
+      /**
+       * @return {number}
+       */
+      size(){ return this.#members.length }
+      /**
+       * @return
+       */
+      setAverage(){
+        this.#avgScore = this.#members.reduce((acc,g)=> acc + g.getScore(),0) / this.size();
+        return this;
+      }
+      /**
+       * @param {InnovHistory} innovDB
+       * @return {Genome}
+       */
+      spawn(innovDB){
+        let baby;
+        if(_.rand() < Params.crossOverRate){
+          baby = this.#randAny().clone();
+        }else{
+          let p1 = this.#randAny();
+          let p2 = this.#randAny();
+          if(p1.getScore() < p2.getScore()){
+            baby = p2.crossOver(p1);
+          }else{
+            baby = p1.crossOver(p2);
+          }
+        }
+        return baby.mutate(innovDB);
+      }
+      /**
+       * @return {Genome}
+       */
+      #randAny(){
+        let slice = this.#members.reduce((acc,g)=> acc+g.getScore(),0) * _.rand();
+        let sum = 0;
+        let rc= this.#members.find(g=>{
+          sum += g.getScore();
+          if(sum > slice){ return true }
+        });
+        return rc || this.#members[0];
+      }
+      /**Get rid of bottom half of this specie.
+       * @return
+       */
+      cull(){
+        if(this.#members.length > 2){
+          for(let i= this.#members.length / 2; i < this.#members.length; ++i){
+            this.#members.splice(i, 1);
+            --i;
+          }
+        }
+        return this;
+      }
+      /**Remove all members.
+       * @return
+       */
+      flush(){
+        _.trunc(this.#members);
+        return this;
+      }
+      /**Normalize all scores.
+       * @return
+       */
+      normalize(){
+        this.#members.forEach(g=> g.setScore(g.getScore()/ this.size()));
+        this.#avgScore = this.#members.reduce((acc,g)=> acc + g.getScore(),0) / this.size();
+        return this;
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**NeatGA
+     * @class
+     */
+    class NeatGA{
+
+      #numOutputs;
+      #numInputs;
+
+      #db;
+      #genomes;
+      #species;
+      #size;
+      #gen;
+
+      get popSize(){ return this.#size }
+
+      /**
+       * @param {number} size
+       * @param {number} inputNo
+       * @param {number} outputNo
+       */
+      constructor(size, inputNo, outputNo){
+        this.#numOutputs=outputNo;
+        this.#numInputs=inputNo;
+        this.#size=size;
+        this.#db = new InnovHistory();
+        this.#gen = 1;
+        this.#genomes=[];
+        this.#species = [];
+        for(let i=0; i<size; ++i){
+          this.#genomes= _.fill(size, ()=> new Genome(inputNo,outputNo).build().mutate(this.#db))
+        }
+      }
+      /**Get the current generation count.
+       * @return {number}
+       */
+      curGen(){
+        return this.#gen;
+      }
+      /**Reify all genomes into their Phenotypes.
+       * @return {array}
+       */
+      createPhenotypes(){
+        return this.#genomes.map(g=> g.reify());
+      }
+      /**Create a new generation by studying the results of the previous generation.
+       * @param {array} scores
+       * @return {array} new set of Phenotypes.
+       */
+      epoch(scores){
+        let prevBest= this.#gen==1 ? null : this.#genomes[0];
+
+        this.#speciate();
+        this.#calcFitness(scores);
+        this.#sortSpecies();
+        this.#cullSpecies();
+        this.#killStaleSpecies();
+        this.#killBadSpecies();
+
+        let children = [],
+            sum = this.#sumAvgScore();
+        this.#species.forEach(s=>{
+          children.push(s.alpha.clone());
+          let count = int(s.avgScore / sum * this.popSize) - 1;
+          //the number of children this this.species is allowed, note -1 is because the champ is already added
+          for(let i=0; i < count; ++i){
+            children.push(s.spawn(this.#db));
+          }
+        });
+        if(children.length < this.popSize){
+          children.push(this.#species[0].alpha.clone());
+        }
+        while(children.length < this.popSize){
+          children.push(this.#species[0].spawn(this.#db));
+        }
+        _.append(this.#genomes, children, true);
+        this.#gen += 1;
+        return this.createPhenotypes();
+      }
+      /**
+      */
+      #speciate(){
+        this.#species.forEach(s=> s.flush());
+        this.#genomes.forEach((g,i)=>{
+          i=this.#species.find(s=> s.compatible(g));
+          i ? i.add(g) : this.#species.push(new Species(g));
+        });
+      }
+      /**
+      */
+      #calcFitness(scores){
+        this.#genomes.forEach((g,i)=> g.setScore(scores[i]));
+        return this;
+      }
+      /**
+      */
+      #sortSpecies(){
+        this.#species.forEach(s=> s.sort());
+        this.#species.sort(_.comparator(_.SORT_DESC,a=>a.bestScore, b=>b.bestScore));
+      }
+      /**
+      */
+      #killStaleSpecies(){
+        for(let i=2; i < this.#species.length; ++i){
+          if(this.#species[i].stale >= Params.staleLimit){
+            this.#species.splice(i, 1);
+            --i;
+          }
+        }
+      }
+      /**
+      */
+      #killBadSpecies(){
+        let size=this.popSize,
+            sum= this.#sumAvgScore();
+        for(let i=1; i < this.#species.length; ++i){
+          if(this.#species[i].avgScore / sum * size < 1){
+            this.#species.splice(i, 1);
+            --i;
+          }
+        }
+      }
+      /**
+      */
+      #sumAvgScore(){
+        return this.#species.reduce((acc,s)=> acc + s.avgScore,0)
+      }
+      /**
+      */
+      #cullSpecies(){
+        this.#species.forEach(s=> s.cull().normalize());
+        return this;
+      }
+    }
+
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    const _$={
+      NeatGA, Genome, Link, Node, Species,
+      Innovation,InnovHistory,
+      configParams(options){ return _.inject(Params,options) }
+    };
+
+    return _$;
+  }
+
+  //export--------------------------------------------------------------------
+  if(typeof module == "object" && module.exports){
+    module.exports=_module(require("@czlab/mcfud"))
+  }else{
+    gscope["io/czlab/mcfud/algo/NEAT_CBullet"]=_module
+  }
+
+})(this)
+
+
+
+
+/* Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Copyright © 2025, Kenneth Leung. All rights reserved. */
+
+;(function(gscope,UNDEF){
+
+  "use strict";
+
+  /**Create the module.
+   */
+  function _module(Mcfud){
+
+    const Core= Mcfud ? Mcfud["Core"] : gscope["io/czlab/mcfud/core"]();
+    const _M= Mcfud ? Mcfud["Math"] : gscope["io/czlab/mcfud/math"]();
+    const int=Math.floor;
+    const {u:_, is}= Core;
+
+    /**
+     * @module mcfud/algo/NEAT_Buckland
+     */
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**
+     * @typedef {object} NeuronType
+     * @property {number} INPUT
+     * @property {number} HIDDEN
+     * @property {number} OUTPUT
+     * @property {number} BIAS
+     * @property {number} NONE
+     */
+    const NeuronType={ INPUT: 1, BIAS: 2, HIDDEN: 3, OUTPUT: 4, NONE: 911 };
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**
+     * @typedef {object} InnovType
+     * @property {number} NEURON
+     * @property {number} LINK
+     */
+    const InnovType={ NEURON:0, LINK:1 }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**Select one of these types when updating the network if snapshot is chosen
+     * the network depth is used to completely flush the inputs through the network.
+     * active just updates the network each timestep.
+     * @typedef {object} RunType
+     * @property {number} SNAPSHOT
+     * @property {number} ACTIVE
+     */
+    const RunType={ SNAPSHOT:7770, ACTIVE:8881 }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    const Params={
+      numInputs: 0,
+      numOutputs: 0,
+      BIAS: 1,//-1,
+      //starting value for the sigmoid response
+      sigmoidResponse:1,
+      //number of times we try to find 2 unlinked nodes when adding a link.
+      addLinkAttempts:5,
+      //number of attempts made to choose a node that is not an input
+      //node and that does not already have a recurrently looped connection to itself
+      findLoopedLink: 5,
+      //the number of attempts made to find an old link to prevent chaining in addNeuron
+      findOldLink: 5,
+      //the chance, each epoch, that a neuron or link will be added to the genome
+      chanceAddLink:0.07,
+      chanceAddNode:0.03,
+      chanceRecurrent: -1,//0.05,
+      //mutation probabilities for mutating the weights
+      mutationRate:0.8,
+      maxWeightJiggle:0.5,
+      chanceSetWeight:0.1,
+      //probabilities for mutating the activation response
+      activationMutation:0.1,
+      maxActivationJiggle:0.1,
+      //the smaller the number the more species will be created
+      compatThreshold:0.26,
+      //during fitness adjustment this is how much the fitnesses of
+      //young species are boosted (eg 1.2 is a 20% boost)
+      youngFitnessBonus:1.3,
+      //if the species are below this age their fitnesses are boosted
+      youngBonusAge:10,
+      //number of population to survive each epoch. (0.2 = 20%)
+      survivalRate:0,
+      //if the species is above this age their fitness gets penalized
+      oldAgeThreshold:50,
+      //by this much
+      oldAgePenalty:0.7,
+      crossOverRate:0.7,
+      //how long we allow a species to exist without any improvement
+      noImprovements:15,
+      //maximum number of neurons permitted in the network
+      maxNNetNeurons:100,
+      numBestElites:4,
+      fitFunc: function(seed=0){ return new FitFunc(seed) },
+      sigmoid: function(netinput, response){
+        return 1 / ( 1 + Math.exp(-netinput / response))
+      },
+      sigmoid2: function(x){
+        //y=1/(1+e^(-x))
+        return 1 / (1 + Math.pow(Math.E, -4.9*x))
+      }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////
+    function _isOUTPUT(n){ return n.neuronType == NeuronType.OUTPUT }
+    function _isBIAS(n){ return n.neuronType == NeuronType.BIAS }
+    function _isINPUT(n,bias=false){
+      return n.neuronType == NeuronType.INPUT || (bias && n.neuronType==NeuronType.BIAS);
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**A numeric fitness object.
+     * @class
+     */
+    class FitFunc{
+      #value;
+      /**
+       * @param {any} seed
+      */
+      constructor(seed){
+        this.#value=seed;
+      }
+      /**Update the fitness with this value.
+       * @param {any} v
+       */
+      update(v){
+        this.#value=v;
+        return this;
+      }
+      /**Get the score.
+       * @return {any}
+       */
+      score(){ return this.#value }
+      /**Create a clone of this fitness.
+       * @return {FitFunc}
+       */
+      clone(){
+        return new FitFunc(this.#value)
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**
+     * @class
+     */
+    class Coord{
+
+      #x;
+      #y;
+
+      get x(){ return this.#x }
+      get y(){ return this.#y }
+
+      /**
+       * @param {number} x
+       * @param {number} y
+       */
+      constructor(x=0,y=0){
+        this.#x=x;
+        this.#y=y;
+      }
+      /**
+       * @return {Coord}
+       */
+      clone(){
+        return new Coord(this.#x, this.#y)
+      }
+      /**
+       * @param {number} x
+       * @param {number} y
+       * @return {Coord}
+       */
+      static dft(){
+        return new Coord(0,0)
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    function _strNodeType(t){
+      switch(t){
+        case NeuronType.INPUT: return "input";
+        case NeuronType.BIAS: return "bias";
+        case NeuronType.HIDDEN: return "hidden";
+        case NeuronType.OUTPUT: return "output";
+      }
+      _.assert(false, `bad node type ${t}`);
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**NeuronGene, part of a Genome.
+     * @class
+     */
+    class NeuronGene{
+
+      #activation;
+      #recurrent;
+      #type;
+      #pos;
+      #id;
+
+      /**
+      */
+      get activation(){ return this.#activation }
+      get neuronType(){ return this.#type }
+      get recur(){ return this.#recurrent }
+      get id(){ return this.#id }
+      get posY(){ return this.#pos.y }
+      get posX(){ return this.#pos.x }
+
+      /**
+      */
+      set activation(a){ this.#activation=a }
+
+      /**
+       * @param {number} id
+       * @param {NeuronType} type
+       * @param {Coord} pos
+       * @param {boolean} recur
+       */
+      constructor(id, type, pos=null,recur=false){
+        _.assert(id>0, `creating a neuron with a bad id ${id}`);
+        this.#pos= pos ? pos.clone() : Coord.dft();
+        this.#recurrent= (recur===true);
+        this.#activation=1;
+        this.#id=id;
+        this.#type= type;
+      }
+      /**
+       * @return {String}
+      */
+      prn(){
+        return `${_strNodeType(this.#type)}#[${this.#id}]`
+      }
+      /**
+      */
+      setRecur(r){
+        this.#recurrent=r;
+        return this;
+      }
+      /**
+       * @return {NeuronGene} copy
+       */
+      clone(){
+        const rc= new NeuronGene(this.#id,this.#type,
+                                 this.#pos, this.#recurrent);
+        rc.activation= this.#activation;
+        return rc;
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**LinkGene, part of a Genome, links NeuronGene A to NeuronGene B.
+     * @class
+     */
+    class LinkGene{
+
+      #fromNeuron;
+      #toNeuron;
+      #recurrent;
+      #enabled;
+      #weight;
+
+      /**
+      */
+      get fromNeuron(){ return this.#fromNeuron }
+      get toNeuron(){ return this.#toNeuron }
+      get enabled(){ return this.#enabled }
+      get weight(){ return this.#weight }
+      get recur(){ return this.#recurrent }
+
+      /**
+      */
+      set weight(w){ this.#weight=w }
+
+      /**
+       * @param {number} from
+       * @param {number} to
+       * @param {boolean} enable
+       * @param {number} w
+       * @param {boolean} rec
+       */
+      constructor(from, to, enable=true, w=null, recur=false){
+        this.#fromNeuron= from;
+        this.#toNeuron= to;
+        this.#recurrent=(recur===true);
+        this.#enabled=(enable !== false);
+        this.#weight= w===null||isNaN(w) ? _.randMinus1To1() : w;
+      }
+      /**
+       * @return {LinkGene} A copy
+      */
+      clone(){
+        return new LinkGene(this.#fromNeuron,this.#toNeuron,
+                            this.#enabled, this.#weight, this.#recurrent)
+      }
+      /**
+       * @param {boolean} r
+       * @return {boolean} r
+       */
+      setRecur(r){
+        this.#recurrent=r;
+        return this;
+      }
+      /**
+       * @param {boolean} e
+       * @return {boolean} e
+       */
+      setEnabled(e){
+        this.#enabled=e;
+        return this;
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**Innovation is a particular change to a Genome's structure. Each time a
+     * genome undergoes a change, that change is recorded as an innovation and
+     * is stored in a global historical database.
+     * @class
+     */
+    class Innov{
+
+      #innovationType;
+      #innovationID;
+      #neuronID;
+      #pos;
+      #neuronType;
+      #neuronIn;
+      #neuronOut;
+
+      /**
+      */
+      get innovType(){ return this.#innovationType }
+      get neuronID(){ return this.#neuronID }
+      get IID(){ return this.#innovationID }
+      get pos() { return this.#pos }
+      get neuronIn(){ return this.#neuronIn }
+      get neuronOut(){ return this.#neuronOut }
+      get neuronType(){ return this.#neuronType }
+
+      /**
+       * @param {InnovHistory} db
+       * @param {number} from
+       * @param {number} to
+       * @param {InnovType} type
+       * @param {array} extra [id,NeuronType]
+       * @param {Coord} pos
+       */
+      constructor(db, from, to, type, extra=null, pos=null){
+        this.#pos= pos ? pos.clone() : Coord.dft();
+        this.#innovationID= db.nextIID();
+        this.#innovationType=type;
+        this.#neuronIn= from;
+        this.#neuronOut= to;
+        if(is.vecN(extra,2,true)){
+          this.#neuronID= extra[0];
+          this.#neuronType= extra[1];
+        }else{
+          this.#neuronID= -31;
+          this.#neuronType= NeuronType.NONE;
+        }
+        db.add(this);
+      }
+      /**
+       * @param {InnovHistory} db
+       * @param {number} nid neuron id
+       * @param {NeuronType} type
+       * @param {Coord} pos
+       * @return {Innov}
+      */
+      static from(db, nid, type, pos){
+        return new Innov(db, -71,-99, InnovType.NEURON, [nid, type], pos)
+      }
+    }
+
+    /**
+    */
+    function _calcSplits(inputs,outputs){
+      return [ 1/(inputs+2), 1/(outputs+1) ]
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**Used to keep track of all innovations created during the populations
+     * evolution, adds all the appropriate innovations.
+     * @class
+     */
+    class InnovHistory{
+
+      #NEURON_COUNTER;
+      #INNOV_COUNTER;
+      #inputs;
+      #outputs;
+      #vecNodes;
+      #vecInnovs;
+
+      /**Initialize the history database using these current
+       * inputs and outputs.
+       * @param {number} inputs
+       * @param {number} outputs
+       */
+      constructor(inputs, outputs){
+
+        let [iXGap, oXGap] = _calcSplits(inputs,outputs);
+        let nObj, nid=0;
+
+        this.#NEURON_COUNTER=0;
+        this.#INNOV_COUNTER=0;
+        this.#outputs=outputs;
+        this.#inputs=inputs;
+        this.#vecInnovs=[];
+        this.#vecNodes=[];
+
+        for(let i=0; i<inputs; ++i){
+          nObj={t: NeuronType.INPUT, id: ++nid,  co: new Coord((i+2)*iXGap,0)};
+          this.#vecNodes.push(nObj);
+          Innov.from(this, nObj.id, nObj.t,  nObj.co);
+        }
+
+        nObj= {t:NeuronType.BIAS, id: ++nid, co: new Coord(iXGap,0)};
+        this.#vecNodes.push(nObj);
+        Innov.from(this,nObj.id, nObj.t, nObj.co);
+
+        for(let i=0; i<outputs; ++i){
+          nObj={t:NeuronType.OUTPUT, id: ++nid, co: new Coord((i+1)*oXGap,1) };
+          this.#vecNodes.push(nObj);
+          Innov.from(this, nObj.id, nObj.t, nObj.co);
+        }
+
+        _.assert(nid==inputs+outputs+1,"bad history db ctor - mismatched neuron ids");
+        _.assert(nid==this.#vecNodes.at(-1).id, "bad history db ctor - erroneous last neuron id");
+        this.#NEURON_COUNTER= nid;
+
+        //_.log(`InnovHistory: inputs=${inputs}, outputs=${outputs}, last neuron id=> ${nid}`);
+
+        //connect each input & bias neuron to each output neuron
+        outputs= this.#vecNodes.filter(n=>n.t == NeuronType.OUTPUT);
+        inputs= this.#vecNodes.filter(n=>n.t != NeuronType.OUTPUT);
+        inputs.forEach(i=> outputs.forEach(o => new Innov(this, i.id, o.id, InnovType.LINK)));
+      }
+      /**Create a new genome.
+       * @param {array} nodes output
+       * @param {array} links output
+       */
+      sample(nodes,links){
+        //make neuron genes then connect each input & bias neuron to each output neuron
+        let ins= this.#vecNodes.filter(nObj=>nObj.t != NeuronType.OUTPUT);
+        let os= this.#vecNodes.filter(nObj=>nObj.t == NeuronType.OUTPUT);
+        this.#vecNodes.forEach(nObj=> nodes.push(new NeuronGene(nObj.id, nObj.t, nObj.co)));
+        ins.forEach(i=> os.forEach(o=> links.push(new LinkGene(i.id, o.id))));
+        return this;
+      }
+      /**
+       * @return {number} next neuron id
+      */
+      #genNID(){ return ++this.#NEURON_COUNTER }
+      /**
+       * @return {number} next innovation number
+       */
+      nextIID(){ return ++this.#INNOV_COUNTER }
+      /**Checks to see if this innovation has already occurred. If it has it
+       * returns the innovation ID. If not it returns a negative value.
+       * @param {number} from
+       * @param {number} out
+       * @param {InnovType} type
+       * @return {number}
+       */
+      check(from, out, type){
+        _.assert(from>0 && out>0, `checking innov with bad neuron ids: from: ${from}, to: ${out}`);
+        const rc= this.#vecInnovs.find(cur=> cur.innovType == type &&
+                                             cur.neuronIn == from && cur.neuronOut == out);
+        return rc ? rc.IID : -51;
+      }
+      /**
+       * @param {Innov} n
+       */
+      add(n){
+        this.#vecInnovs.push(n)
+      }
+      /**Creates a new innovation.
+       * @param {number} from
+       * @param {number} to
+       * @param {InnovType} innovType
+       * @param {NeuronType} neuronType
+       * @param {Coord} pos
+       * @return {Innov}
+       */
+      create(from, to, innovType, neuronType=NeuronType.NONE, pos=null){
+        let i;
+        if(innovType==InnovType.NEURON){
+          _.assert(neuronType != NeuronType.NONE, "create-innov: unexpected bad neuron type");
+          _.assert(from>0&&to>0, `create-innov: bad neuron ids: from: ${from} to: ${to}`);
+          i= new Innov(this, from, to, innovType, [this.#genNID(),neuronType], pos)
+        }else{
+          i= new Innov(this, from, to, innovType, null, pos);
+        }
+        return i;
+      }
+      /**
+       * @param {number} nid Neuron Id.
+       * @return {NeuronGene}
+       */
+      createNeuronFromID(nid){
+        const i= this.#vecInnovs.find(n=> n.neuronID==nid);
+        return i ? (new NeuronGene(nid, i.neuronType, i.pos))
+                 : _.assert(false, "unknown neuron id not found in history.");
+      }
+      /**
+       * @param {number} inv .index into the list of innovations.
+       * @return {number} Neuron ID or -1
+      */
+      getNeuronID(inv){
+        const rc= this.#vecInnovs.find(n=> n.IID == inv);
+        return rc ? rc.neuronID : -41;
+      }
+      /**
+       * @param {LinkGene} gene
+       * @param {InnovType} type
+       * @return {number} innov id.
+       */
+      getIID(gene, type=InnovType.LINK){
+        return this.check(gene.fromNeuron, gene.toNeuron, type)
+      }
+      /**
+       * @param {LinkGene} gene
+       * @param {InnovType} type
+       * @return {Innov} innov
+       */
+      getInnov(gene, type=InnovType.LINK){
+        return this.#vecInnovs.find(i=> i.innovType == type &&
+                                        i.neuronIn == gene.fromNeuron && i.neuronOut == gene.toNeuron)
+      }
+      /**
+       * @return {number}
+       */
+      countInputs(){ return this.#inputs }
+      /**
+       * @return {number}
+       */
+      countOutputs(){ return this.#outputs }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**NLink
+     * @class
+     */
+    class NLink{
+
+      #weight;
+      #from;
+      #out;
+      #recurrent;
+
+      /**
+      */
+      get weight(){ return this.#weight }
+      get from(){ return this.#from }
+
+      /**
+       * @param {number} w
+       * @param {NNeuron} from
+       * @param {NNeuron} out
+       * @param {boolean} recur
+       */
+      constructor(w, from, out, recur=false){
+        this.#weight=w;
+        this.#from=from;
+        this.#out=out;
+        this.#recurrent= (recur===true);
+      }
+      /**
+       * @return {NLink} A copy
+       */
+      clone(){
+        return new NLink(this.#weight, this.#from, this.#out, this.#recurrent)
+      }
+      /**
+       * Create a link between these two neurons and
+       * assign the weight stored in the gene.
+       * @param {LinkGene} gene
+       * @param {NNeuron} from
+       * @param {NNeuron} to
+       * @return {NLink}
+       */
+      static from(gene,from,to){
+        const rc= new NLink(gene.weight, from, to, gene.recur);
+        //add new links to neurons
+        from.addLinkOut(rc);
+        to.addLinkIn(rc);
+        return rc;
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**NNeuron
+     * @class
+     */
+    class NNeuron{
+
+      #vecLinksOut;
+      #activation;
+      #vecLinksIn;
+      #neuronType;
+      #neuronID;
+      #output;
+      #pos;
+
+      /**
+      */
+      get activation() { return this.#activation }
+      get neuronType() { return this.#neuronType }
+      get id() { return this.#neuronID }
+      get output() { return this.#output }
+
+      /**
+      */
+      set output(o) { this.#output=o }
+
+
+      /**
+       * @param {number} id
+       * @param {NeuronType} type
+       * @param {Coord} pos
+       * @param {number} act_response
+       */
+      constructor(id,type, pos, act_response){
+        this.#pos= pos ? pos.clone() : Coord.dft();
+        this.#activation=act_response;
+        this.#neuronType=type;
+        this.#neuronID=id;
+        this.#output=0;
+        this.#vecLinksIn=[];
+        this.#vecLinksOut=[];
+      }
+      /**
+      */
+      _cpy(output,inLinks,outLinks){
+        this.#vecLinksOut=outLinks.map(v=> v.clone());
+        this.#vecLinksIn=inLinks.map(v=> v.clone());
+        this.#output=output;
+        return this;
+      }
+      /**
+       * @return {String}
+       */
+      prn(){
+        return `node(${_strNodeType(this.#neuronType)})#[${this.#neuronID}]`;
+      }
+      /**
+      */
+      flush(){
+        this.#output=0;
+        return this;
+      }
+      /**
+       * @return {NNeuron} A copy
+      */
+      clone(){
+        return new NNeuron(this.#neuronID,this.#neuronType,this.#pos,this.#activation).
+               _cpy(this.#output,this.#vecLinksIn, this.#vecLinksOut)
+      }
+      /**
+       * @param {Function} func
+       * @return {any}
+       */
+      funcOverInLinks(func){
+        return func(this.#vecLinksIn)
+      }
+      /**
+       * @param {NLink} n
+       */
+      addLinkIn(n){
+        this.#vecLinksIn.push(n);
+        return this;
+      }
+      /**
+       * @param {NLink} o
+       * @return {NNeuron} this
+       */
+      addLinkOut(o){
+        this.#vecLinksOut.push(o);
+        return this;
+      }
+      /**
+       * @param {NeuronGene} n
+       * @return {NNeuron}
+       */
+      static from(n){
+        return new NNeuron(n.id, n.neuronType, n.pos, n.activation)
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**NeuralNetwork
+     * @class
+     */
+    class NeuralNet{
+
+      #vecNeurons;
+      #depth;
+
+      /**
+       * @param {NNeuron[]} neurons
+       * @param {number} depth
+       */
+      constructor(neurons, depth){
+        _.append(this.#vecNeurons=[], neurons, true);
+        this.#depth=depth;
+        neurons.length=0;
+      }
+      /**
+       * @return {NeuralNet}
+       */
+      clone(){
+        return new NeuralNet(this.#vecNeurons.map(n=>n.clone()),this.#depth)
+      }
+      /**Update network for this clock cycle.
+       * @param {number[]} inputs
+       * @param {RunType} type
+       * @return {number[]} outputs
+       */
+      compute(inputs,type=RunType.ACTIVE){
+        return this.update(inputs, type)
+      }
+      /**Update network for this clock cycle.
+       * @param {number[]} inputs
+       * @param {RunType} type
+       * @return {number[]} outputs
+       */
+      update(inputs, type=RunType.ACTIVE){
+        //if the mode is snapshot then we require all the neurons to be
+        //iterated through as many times as the network is deep. If the
+        //mode is set to active the method can return an output after just one iteration
+        let n,jobDone,outputs=[],
+            loopCnt= type==RunType.SNAPSHOT ? this.#depth : 1;
+        function _sum(a){
+          return a.reduce((acc,k)=> acc + k.weight * k.from.output,0);
+        }
+        while(loopCnt--){
+          outputs.length=0;
+          jobDone=0;//expect 2 jobs (bind input values & bias)
+          n=0;
+          for(let obj,j=0; j < this.#vecNeurons.length; ++j){
+            obj=this.#vecNeurons[j];
+            if(_isINPUT(obj)){
+              _.assert(n<inputs.length, `NeuralNet: update with mismatched input size ${inputs.length}`);
+              obj.output=inputs[n++];
+              if(n==inputs.length){++jobDone}
+            }else if(_isBIAS(obj)){
+              obj.output=Params.BIAS;
+              ++jobDone;
+            }
+            if(jobDone==2){break}
+          }
+          //now deal with the other neurons...
+          this.#vecNeurons.forEach(obj=>{
+            if(!_isINPUT(obj,true)){
+              obj.output = Params.sigmoid(obj.funcOverInLinks(_sum), obj.activation);
+              _isOUTPUT(obj) ? outputs.push(obj.output) : 0;
+            }
+          });
+        }
+
+        if(type == RunType.SNAPSHOT){
+          this.#vecNeurons.forEach(n=> n.flush());
+        }
+
+        /////
+        return outputs;
+      }
+    }
+
+    /**
+     * @param {NeuronGene} from
+     * @param {NeuronGene} to
+     * @return {Coord}
+     */
+    function _splitBetween(from,to){
+      _.assert(from && to, `splitBetween: unexpected null params: from: ${from}, to: ${to}`);
+      return new Coord((from.posX + to.posX)/2, (from.posY + to.posY)/2)
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**
+     * The whole set of nuclear DNA of an organism.
+     * Genetic information of a cell is stored in chemical form in DNA or RNA.
+     * The order of the nucleotide bases arranged in the polynucleotide chain determines
+     * the genetic instructions. A gene is a sequence stretch of nucleotides which
+     * encodes a specific protein. Humans have thousands of genes in their total DNA molecules.
+     * The entire nuclear DNA is called the genome of an organism. This DNA is packed into
+     * chromosome structures. All gene sequences are called non-repetitive DNA.
+     * A genome has many DNA sequences and these are called repetitive DNA.
+     * This repetitive DNA also has a function in the gene regulation.
+     * The key difference between gene and genome is that a gene is a locus on a
+     * DNA molecule whereas genome is a total nuclear DNA.
+     *
+     * @class
+     */
+    class Genome{
+
+      #vecNeurons;
+      #vecLinks;
+      #non_ins;
+      #ins;
+      #db;
+
+      #genomeID;
+      #fitness;
+
+      //its fitness score after it has been placed into a species and adjusted accordingly
+      #adjScore;
+
+      //the number of offspring is required to spawn for the next generation
+      #spawnCnt;
+      #inputs;
+      #outputs;
+
+      //keeps a track of which species this genome is in
+      #species;
+
+      /**
+      */
+      get spawnCnt() { return this.#spawnCnt }
+      get adjScore(){ return this.#adjScore }
+      get id(){ return this.#genomeID }
+
+      /**
+      */
+      set spawnCnt(n) { this.#spawnCnt = n }
+
+      /**A genome basically consists of a vector of link genes,
+       * a vector of neuron genes and a fitness score.
+       * @param {InnovHistory} db
+       * @param {number} gid
+       */
+      constructor(db,gid){
+        this.#fitness=Params.fitFunc(0);
+        this.#vecNeurons=[];
+        this.#vecLinks=[];
+        this.#genomeID= gid;
+        this.#species=0;
+        this.#db=db;
+        //adjusted score via species
+        this.#adjScore=0;
+        this.#spawnCnt=0;
+        this.#inputs=db.countInputs();
+        this.#outputs=db.countOutputs();
+        if(gid>0)
+          db.sample(this.#vecNeurons, this.#vecLinks);
+        this.#segregate();
+      }
+      /**
+      */
+      #segregate(){
+        this.#dbgCtor();
+        this.#non_ins=[];
+        this.#ins=[];
+        this.#sortGenes();
+        this.#vecNeurons.forEach(n=> _isINPUT(n,true) ? this.#ins.push(n) : this.#non_ins.push(n));
+      }
+      /**
+       * @return {String}
+       */
+      #prnNodes(){
+        return this.#vecNeurons.reduce((acc,n,i)=> acc += ((i==0)?"":", ") + n.prn(), "")
+      }
+      /**
+      */
+      #dbgCtor(){
+        if(0 && this.#genomeID>0)
+          _.log(`genome(${this.#genomeID}):${this.#prnNodes()}`);
+      }
+      /**
+       * @return {String}
+       */
+      dbgState(){
+        return `{nodes=${this.#prnNodes()},links=${this.#vecLinks.length}}`
+      }
+      /**
+       * @param {number} n
+       */
+      adjustScore(n){
+        this.#adjScore=n;
+        return this;
+      }
+      /**
+       * @return {number} number of neurons
+       */
+      numNeurons() { return this.#vecNeurons.length }
+      /**
+       * @return {number} number of links
+      */
+      numGenes() { return this.#vecLinks.length }
+      /**
+       * @param {any} num fitness value
+       */
+      setScore(num){
+        this.#fitness.update(num);
+        return this;
+      }
+      /**
+       * @return {number}
+       */
+      getScore(){ return this.#fitness.score() }
+      /**
+       * @return {LinkGene}
+       */
+      geneAt(i) { return this.#vecLinks[i]  }
+      /**
+       * @return {NeuronGene}
+       */
+      neuronAt(i) { return this.#vecNeurons[i] }
+      /**
+       * @param {number} newid
+       */
+      mutateGID(newid){
+        _.assert(newid>0, "bad genome id, must be positive");
+        this.#genomeID=newid;
+        return this;
+      }
+      /**
+      */
+      _specialClone(id, nodes,links){
+        this.#non_ins=[];
+        this.#ins=[];
+        nodes.forEach(n=> _isINPUT(n,true) ? this.#ins.push(n) : this.#non_ins.push(n));
+        _.append(this.#vecNeurons, nodes, true);
+        _.append(this.#vecLinks, links, true);
+        this.#genomeID=id;
+        nodes.length=0;
+        links.length=0;
+        return this;
+      }
+      /**Create a neural network from the genome.
+       * @param {number} depth
+       * @return {NeuralNet} newly created ANN
+       */
+      createPhenotype(depth){
+        const vs= this.#vecNeurons.map(g=> NNeuron.from(g));
+        this.#vecLinks.forEach(k=>
+          k.enabled? NLink.from(k, vs.find(n=> n.id== k.fromNeuron),
+                                   vs.find(n=> n.id== k.toNeuron)) :0);
+        return new NeuralNet(vs, depth);
+      }
+      /**
+       * @return {InnovHistory}
+       */
+      history(){ return this.#db }
+      /**
+      */
+      #randAny(){ return _.randItem(this.#vecNeurons) }
+      /**
+      */
+      #randNonInputs(){ return _.randItem(this.#non_ins) }
+      /**Create a new link with the probability of Params.chanceAddLink.
+       * @param {number} mutationRate
+       * @param {boolean} chanceOfLooped
+       * @param {number} triesToFindLoop
+       * @param {number} triesToAddLink
+       */
+      addLink(mutationRate, chanceOfLooped, triesToFindLoop, triesToAddLink){
+        _.assert(triesToFindLoop>=0,"bad param: triesToFindLoop");
+        _.assert(triesToAddLink>=0, "bad param: triesToAddLink");
+        if(_.rand() > mutationRate){ return }
+        let n1, n2, n, recurrent = false;
+        //create link that loops back into the same neuron?
+        if(_.rand() < chanceOfLooped){
+          while(triesToFindLoop--){
+            n=this.#randNonInputs();
+            if(!n.recur){
+              n.setRecur(recurrent = true);
+              n1 = n2 = n;
+              break;
+            }
+          }
+        }else{
+          while(triesToAddLink--){
+            n2 = this.#randNonInputs();
+            n1 = this.#randAny();
+            if(n1.id == n2.id ||
+               this.#dupLink(n1.id, n2.id)){
+              n1 = n2 = UNDEF; // bad
+            }else{
+              break;
+            }
+          }
+        }
+        if(n1 && n2){
+          if(n1.posY > n2.posY){ recurrent = true }
+          if(this.#db.check(n1.id, n2.id, InnovType.LINK) < 0){
+            this.#db.create(n1.id, n2.id, InnovType.LINK)
+          }
+          this.#vecLinks.push(new LinkGene(n1.id, n2.id, true, _.randMinus1To1(), recurrent));
+          this.#sortGenes();
+          //_.log(`addLink: gid(${this.#genomeID}): ${this.dbgState()}`);
+        }
+      }
+      /**Adds a neuron to the genotype by examining the network,
+       * splitting one of the links and inserting the new neuron.
+       * @param {number} mutationRate
+       * @param {number} triesToFindOldLink
+       */
+      addNeuron(mutationRate, triesToFindOldLink){
+        _.assert(triesToFindOldLink>=0,"bad param: triesToFindOldLink");
+        if(_.rand() > mutationRate){ return }
+        //If the genome is small the code makes sure one of the older links is
+        //split to ensure a chaining effect does not occur.
+        //Here, if the genome contains less than 5 hidden neurons it
+        //is considered to be too small to select a link at random
+        let toID, fromID=-1,
+            fLink, newNeuronID,
+            numGenes=this.numGenes(),
+            //bias towards older links
+            offset=numGenes-1-int(Math.sqrt(numGenes)),
+            _findID= (fLink)=> (fLink.enabled && !fLink.recur &&
+                                !_isBIAS(this.#findNeuron(fLink.fromNeuron))) ? fLink.fromNeuron : -1;
+        if(numGenes < this.#inputs+this.#outputs+5){
+          while(fromID<0 && triesToFindOldLink--){
+            fLink = this.#vecLinks[_.randInt2(0, offset)];
+            fromID= _findID(fLink);
+          }
+        }else{
+          while(fromID<0){
+            fLink = _.randItem(this.#vecLinks);
+            fromID=_findID(fLink);
+          }
+        }
+
+        if(fromID<0){
+          return;
+        }
+
+        _.assert(fLink, "addNeuron: unexpected null link gene!");
+        fLink.setEnabled(false);
+        toID=fLink.toNeuron;
+
+        _.assert(fromID>0 && toID>0, `addNeuron: bad neuron ids: fromID: ${fromID}, toID: ${toID}`);
+
+        //keep original weight so that the split does not disturb
+        //anything the NN may have already learned...
+        let oldWeight = fLink.weight,
+            toObj=this.#findNeuron(toID),
+            fromObj=this.#findNeuron(fromID),
+            newPOS=_splitBetween(fromObj,toObj),
+            iid = this.#db.check(fromID, toID, InnovType.NEURON);
+        if(iid>0 && this.#hasNeuron(this.#db.getNeuronID(iid))){ iid=-1 }
+        if(iid<0){
+          //_.log(`addNeuron: need to create 2 new innovs`);
+          newNeuronID= this.#db.create(fromID, toID,
+                                       InnovType.NEURON,
+                                       NeuronType.HIDDEN, newPOS).neuronID;
+          _.assert(newNeuronID>0,`addNeuron: (+) unexpected -ve neuron id ${newNeuronID}`);
+          //new innovations
+          this.#db.create(fromID, newNeuronID, InnovType.LINK);
+          this.#db.create(newNeuronID, toID, InnovType.LINK);
+        }else{
+          //_.log(`addNeuron: innov already exist or neuron added already`);
+          //this innovation exists, find the neuron
+          newNeuronID = this.#db.getNeuronID(iid);
+          _.assert(newNeuronID>0,`addNeuron: (x) unexpected -ve neuron id ${newNeuronID}`);
+        }
+
+        //double check...
+        _.assert(this.#db.check(fromID, newNeuronID, InnovType.LINK) >0 &&
+                 this.#db.check(newNeuronID, toID, InnovType.LINK) >0, "addNeuron: expected innovations");
+
+        //now we need to create 2 new genes to represent the new links
+        this.#vecNeurons.push(new NeuronGene(newNeuronID, NeuronType.HIDDEN, newPOS));
+        this.#non_ins.push(this.#vecNeurons.at(-1));
+        this.#vecLinks.push(new LinkGene(fromID, newNeuronID, true, 1),
+                            new LinkGene(newNeuronID, toID, true, oldWeight));
+        this.#sortGenes();
+        //_.log(`addNeuron: gid(${this.#genomeID}): ${this.dbgState()}`);
+      }
+      /**Get neuron with this id.
+       * @param {number} id
+       * @return {number}
+       */
+      #findNeuron(id){
+        let obj= this.#vecNeurons.find(n=> n.id==id);
+        return obj  ? obj : _.assert(false, "Error in Genome::findNeuron");
+      }
+      /**
+       * @param {number} neuronIn
+       * @param {number} neuronOut
+       * @return {boolean} true if the link is already part of the genome
+       */
+      #dupLink(neuronIn, neuronOut){
+        return this.#vecLinks.some(k=> k.fromNeuron == neuronIn && k.toNeuron == neuronOut)
+      }
+      /**Tests to see if the parameter is equal to any existing neuron ID's.
+       * @param {number} id
+       * @return {boolean} true if this is the case.
+       */
+      #hasNeuron(id){
+        //_.log(`hasNeuron: checking if genome has this neuron: ${id}`);
+        return id > 0 ? this.#vecNeurons.some(n=> n.id == id) : false;
+      }
+      /**
+       * @param {number} mutationRate
+       * @param {number} probNewWeight the chance that a weight may get replaced by a completely new weight.
+       * @param {number} maxPertubation the maximum perturbation to be applied
+       */
+      mutateWeights(mutationRate, probNewWeight, maxPertubation){
+        this.#vecLinks.forEach(k=>{
+          if(_.rand() < mutationRate)
+            k.weight= _.rand()<probNewWeight ? _.randMinus1To1()
+                                              : k.weight + _.randMinus1To1() * maxPertubation;
+        })
+      }
+      /**Perturbs the activation responses of the neurons.
+       * @param {number} mutationRate
+       * @param {number} maxPertubation the maximum perturbation to be applied
+       */
+      mutateActivation(mutationRate, maxPertubation){
+        this.#vecNeurons.forEach(n=>{
+          if(_.rand() < mutationRate)
+            n.activation += _.randMinus1To1() * maxPertubation;
+        })
+      }
+      /**Find the compatibility of this genome with the passed genome.
+       * @param {Genome} other
+       * @return {number}
+       */
+      calcCompat(other){
+        //travel down the length of each genome counting the number of
+        //disjoint genes, the number of excess genes and the number of matched genes
+        let g1=0,g2=0,
+            id1,id2,k1,k2,
+            numDisjoint= 0,
+            numExcess = 0,
+            numMatched = 0,
+            sumWeightDiff = 0,
+            curEnd=this.numGenes(),
+            otherEnd=other.numGenes();
+
+        while(g1<curEnd || g2<otherEnd){
+
+          //genome2 longer so increment the excess score
+          if(g1 >= curEnd){ ++g2; ++numExcess; continue; }
+          //genome1 longer so increment the excess score
+          if(g2 >= otherEnd){ ++g1; ++numExcess; continue; }
+
+          k2=other.geneAt(g2);
+          k1=this.geneAt(g1);
+          id2 = this.#db.getIID(k2);
+          id1 = this.#db.getIID(k1);
+
+          if(id1 == id2){
+            ++g1; ++g2; ++numMatched;
+            sumWeightDiff += Math.abs(k1.weight - k2.weight);
+          }else{
+            ++numDisjoint;
+            if(id1 < id2){ ++g1 }
+            else if(id1 > id2){ ++g2 }
+          }
+        }
+
+        let disjoint = 1,
+            excess   = 1,
+            matched  = 0.4,
+            longest= Math.max(this.numGenes(),other.numGenes()),
+            xxx= (excess * numExcess/longest) + (disjoint * numDisjoint/longest);
+
+        return numMatched>0 ? xxx + (matched * sumWeightDiff/ numMatched) : xxx;
+      }
+      /**
+      */
+      #sortGenes(){
+        if(1)
+          this.#vecLinks.sort(_.comparator(_.SORT_ASC,a=>this.#db.getIID(a), b=>this.#db.getIID(b)));
+        return this;
+      }
+      /**
+      */
+      _cpy(fit,id,adjScore,spawnCnt,species,nodes,links){
+        this.#fitness=Params.fitFunc(fit.score());
+        this.#vecNeurons=nodes.map(v=>v.clone());
+        this.#vecLinks=links.map(v=>v.clone());
+        this.#spawnCnt=spawnCnt;
+        this.#adjScore=adjScore;
+        this.#species=species;
+        this.#genomeID=id;
+        this.#segregate();
+        return this;
+      }
+      /**
+       * @return {Genome}
+       */
+      clone(){
+        return new Genome(this.#db, -1)._cpy(
+          this.#fitness,
+          this.#genomeID,
+          this.#adjScore,
+          this.#spawnCnt,
+          this.#species,
+          this.#vecNeurons,
+          this.#vecLinks
+        )
+      }
+      /**
+       * @param {number} gid
+       */
+      morph(gid){
+        this.#genomeID=gid;
+        if(this.numNeurons() < Params.maxNNetNeurons)
+          this.addNeuron(Params.chanceAddNode, Params.findOldLink);
+        //now there's the chance a link may be added
+        this.addLink(Params.chanceAddLink,
+                     Params.chanceRecurrent,
+                     Params.findLoopedLink, Params.addLinkAttempts);
+        //mutate the weights
+        this.mutateWeights(Params.mutationRate,
+                           Params.chanceSetWeight,
+                           Params.maxWeightJiggle);
+        this.mutateActivation(Params.activationMutation, Params.maxActivationJiggle);
+        return this;
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**Species
+     * @class
+     */
+    class Species{
+
+      #speciesID;
+      #stale;
+      #age;
+      #numSpawn;
+      #vecMembers;
+      #leader;
+      #bestScore;
+
+      /**
+      */
+      get bestScore() { return this.#bestScore }
+      get id() { return this.#speciesID }
+      get leader() { return this.#leader }
+      get stale(){ return this.#stale }
+      get age(){ return this.#age }
+
+      /**
+       * @param {number} sid
+       * @param {Genome} org
+       */
+      constructor(sid, org){
+        this.#bestScore= org.getScore();
+        this.#leader= org.clone();
+        this.#vecMembers= [org];
+        this.#speciesID= sid;
+        this.#numSpawn=0;
+        this.#age=0;
+        this.#stale=0;
+      }
+      /**Adjusts the fitness of each individual by first
+       * examining the species age and penalising if old, boosting if young.
+       * Then we perform fitness sharing by dividing the fitness
+       * by the number of individuals in the species.
+       * This ensures a species does not grow too large.
+       */
+      adjustScores(){
+        this.#vecMembers.forEach((g,i,a)=>{
+          i = g.getScore();
+          if(this.#age < Params.youngBonusAge){
+            //boost the fitness scores if the species is young
+            i *= Params.youngFitnessBonus
+          }
+          if(this.#age > Params.oldAgeThreshold){
+            //punish older species
+            i *= Params.oldAgePenalty
+          }
+          //apply fitness sharing to adjusted fitnesses
+          g.adjustScore( i/a.length);
+        });
+        return this;
+      }
+      /**Adds a new member to this species and updates the member variables accordingly
+       * @param {Genome} g
+       */
+      addMember(g){
+        if(g.getScore() > this.#bestScore){
+          this.#bestScore = g.getScore();
+          this.#leader = g.clone();
+          this.#stale = 0;
+        }
+        g.species= this.#speciesID;
+        this.#vecMembers.push(g);
+        return this;
+      }
+      /**Clears out all the members from the last generation, updates the age and gens no improvement.
+       */
+      purge(){
+        this.#vecMembers.length=0;
+        this.#numSpawn = 0;
+        ++this.#stale;
+        ++this.#age;
+        return this;
+      }
+      /**Simply adds up the expected spawn amount for each individual
+       * in the species to calculate the amount of offspring
+       * this species should spawn.
+       */
+      calcSpawnAmount(){
+        return this.#numSpawn= this.#vecMembers.reduce((acc,g)=> acc + g.spawnCnt, 0)
+      }
+      /**Spawns an individual from the species selected at random
+       * from the best Params::dSurvivalRate percent.
+       * @return {Genome} a random genome selected from the best individuals
+       */
+      spawn(){
+        let n,baby,z=this.#vecMembers.length;
+        if(z == 1){
+          baby = this.#vecMembers[0]
+        }else{
+          n = int(Params.survivalRate * z)-1;
+          if(n<0)n=1;
+          if(n>=z)n=z-1;
+          baby = this.#vecMembers[ _.randInt2(0, n) ];
+        }
+        return baby.clone();
+      }
+      /**
+       * @param {number} tries
+       * @return {array} [a,b]
+       */
+      randPair(tries=5){
+        _.assert(tries>=0, "bad param: tries must be positive");
+        let rc,g1,g2,n,z=this.#vecMembers.length;
+        if(z == 1){
+          g1=this.#vecMembers[0];
+        }else{
+          n = int(Params.survivalRate * z)-1;
+          if(n<0)n=1;
+          if(n>=z)n=z-1;
+          g1= this.#vecMembers[ _.randInt2(0, n) ];
+          while(tries--){
+            g2= this.#vecMembers[ _.randInt2(0, n) ];
+            if(g1.id == g2.id){g2=UNDEF}else{ break }
+          }
+        }
+        return g2 ? [g1, g2] : [g1, null];
+      }
+      /**
+       * @return {number}
+       */
+      numToSpawn(){ return this.#numSpawn }
+      /**
+       * @return {number}
+       */
+      size(){ return this.#vecMembers.length }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**A recursive function used to calculate a lookup table of split depths.
+     */
+    function _splitDepths(low, high, depth, out){
+      const span = high-low;
+      out.push({val: low + span/2, depth: depth+1});
+      if(depth > 6){
+      }else{
+        _splitDepths(low, low+span/2, depth+1, out);
+        _splitDepths(low+span/2, high, depth+1, out);
+      }
+      return out;
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    /**NeatGA
+     * @class
+     */
+    class NeatGA{
+
+      #SPECIES_COUNTER;
+      #GENOME_COUNTER;
+
+      #vecSpecies;
+      #vecSplits;
+      #vecBest;
+
+      #generation;
+      #vecGenomes;
+      #totFitAdj;
+      #avFitAdj;
+      #bestFit;
+      #popSize;
+      #innovDB;
+
+      /**Creates a base genome from supplied values and creates a population
+       * of 'size' similar (same topology, varying weights) genomes.
+       * @param {number} size
+       * @param {number} inputs
+       * @param {number} outputs
+       */
+      constructor(size, inputs, outputs){
+        //this holds the precalculated split depths. They are used
+        //to calculate a neurons x/y position for rendering and also
+        //for calculating the flush depth of the network when a
+        //phenotype is working in 'snapshot' mode.
+        //create the network depth lookup table
+        this.#vecSplits = _splitDepths(0, 1, 0, []);
+        this.#vecBest=[];
+        this.#vecSpecies=[];
+
+        this.#SPECIES_COUNTER=0;
+        this.#GENOME_COUNTER=0;
+
+        this.#generation=0;
+        this.#popSize=size;
+
+        //adjusted fitness scores
+        this.#totFitAdj=0;
+        this.#avFitAdj=0;
+        this.#bestFit=0;
+
+        this.#innovDB= new InnovHistory(inputs, outputs);
+        this.#vecGenomes= _.fill(size, ()=> new Genome(this.#innovDB, this.#genGID()));
+        //_.log(`NeatGA: inited population with ${this.#vecGenomes.length} genomes`);
+      }
+      /**
+       * @return {number} current generation
+       */
+      curGen(){
+        return this.#generation
+      }
+      /**
+       * @param {Genome} mum
+       * @param {Genome} dad
+       */
+      #crossOver(mum, dad){
+        let mumEnd=mum.numGenes(), dadEnd=dad.numGenes();
+        let mumIsBest = mum.getScore()>=dad.getScore();
+        //step through each parents genes until we reach the end of both
+        let bbGenes=[], bbNodes=[],
+            curMum=0,curDad=0,chosen, pm, pd, iid1, iid2;
+        while(!(curMum == mumEnd && curDad == dadEnd)){
+          if(curMum == mumEnd){
+            if(!mumIsBest){chosen = dad.geneAt(curDad)}
+            ++curDad;
+          }else if(curDad == dadEnd){
+            if(mumIsBest){chosen = mum.geneAt(curMum)}
+            ++curMum;
+          }else{
+            pm=mum.geneAt(curMum);
+            pd=dad.geneAt(curDad);
+            iid1=this.#innovDB.getIID(pm);
+            iid2=this.#innovDB.getIID(pd);
+            if(iid1 < iid2){
+              if(mumIsBest){chosen = pm}
+              ++curMum;
+            }else if(iid2 < iid1){
+              if(!mumIsBest){chosen = pd}
+              ++curDad;
+            }else{
+              chosen=_.randAorB(pm,pd);
+              ++curMum;
+              ++curDad;
+            }
+          }
+          _.assert(chosen, "crossOver: unexpected null as chosen");
+          //add the selected gene if not already added
+          if(bbGenes.length == 0 ||
+             this.#innovDB.getIID(bbGenes.at(-1)) != this.#innovDB.getIID(chosen)){
+            bbGenes.push(chosen.clone())
+          }
+          //Check if we already have the nodes referred to in chosen,
+          //if not, they need to be added.
+          [chosen.fromNeuron, chosen.toNeuron].forEach(nid=> bbNodes.indexOf(nid)<0 ? bbNodes.push(nid) : 0);
+        }
+
+        chosen= new Genome(this.#innovDB,-1)._specialClone(
+                  this.#genGID(), bbNodes.sort().map(n=> this.#innovDB.createNeuronFromID(n)), bbGenes);
+        //_.log(`crossOver: mum(${mum.id})+dad(${dad.id}): new-child:(${chosen.id}) with ${chosen.dbgState()}`);
+        return chosen;
+      }
+      #genSID(){ return ++this.#SPECIES_COUNTER}
+      #genGID(){ return ++this.#GENOME_COUNTER }
+      /**Select NumComparisons members from the population at random testing
+       * against the best found so far.
+       * @param {number} howMany
+       * @return {Genome}
+       */
+      tournamentSelection(howMany){
+        let chosen,
+            g, bestSoFar = 0;
+        _.assert(howMany>=0, `tournamentSelection: bad arg value: ${howMany}`);
+        while(howMany--){
+          g = _.randItem(this.#vecGenomes);
+          if(g.getScore() > bestSoFar){
+            chosen = g;
+            bestSoFar = g.getScore();
+          }
+        }
+        return chosen;
+      }
+      /**Searches the lookup table for the splitY value of each node
+       * in the genome and returns the depth of the network based on this figure.
+       * @param {Genome} gen
+       * @return {number}
+       */
+      calcNetDepth(gen){
+        let maxSoFar = 0;
+        for(let nd=0; nd<gen.numNeurons(); ++nd){
+          for(let i=0; i<this.#vecSplits.length; ++i)
+            if(gen.neuronAt(nd).posY == this.#vecSplits[i].val &&
+               this.#vecSplits[i].depth > maxSoFar){
+              maxSoFar = this.#vecSplits[i].depth;
+            }
+        }
+        return maxSoFar + 2;
+      }
+      /**Separates each individual into its respective species by calculating
+       * a compatibility score with every other member of the population and
+       * niching accordingly. The function then adjusts the fitness scores of
+       * each individual by species age and by sharing and also determines
+       * how many offspring each individual should spawn.
+       */
+      #speciate(){
+        this.#vecGenomes.forEach((g,i)=>{
+          i= this.#vecSpecies.find(s=> g.calcCompat(s.leader) <= Params.compatThreshold);
+          if(i){
+            i.addMember(g);
+          }else{
+            this.#vecSpecies.push(new Species(this.#genSID(), g));
+          }
+        });
+        //now that all the genomes have been assigned a species the fitness scores
+        //need to be adjusted to take into account sharing and species age.
+        this.#vecSpecies.forEach(s=> s.adjustScores())
+        //calculate new adjusted total & average fitness for the population
+        this.#vecGenomes.forEach(g=> this.#totFitAdj += g.adjScore);
+        //////
+        this.#avFitAdj = this.#totFitAdj / this.#vecGenomes.length;
+        //calculate how many offspring each member of the population should spawn
+        this.#vecGenomes.forEach(g=> g.spawnCnt=g.adjScore / this.#avFitAdj);
+        //calculate how many offspring each species should spawn
+        this.#vecSpecies.forEach(s=> s.calcSpawnAmount());
+        //so we can sort species by best fitness. Largest first
+        this.#vecSpecies.sort(_.comparator(_.SORT_DESC, a=>a.bestScore, b=>b.bestScore));
+      }
+      /**Sorts the population into descending fitness, keeps a record of the best
+       * n genomes and updates any fitness statistics accordingly.
+       */
+      #sortAndRecord(scores){
+        this.#vecGenomes.forEach((g,i)=> g.setScore(scores[i]));
+        this.#vecGenomes.sort(_.comparator(_.SORT_DESC, a=>a.getScore(), b=>b.getScore()));
+        this.#bestFit = Math.max(this.#bestFit,this.#vecGenomes[0].getScore());
+        //save the best
+        this.#vecBest.length=0;
+        for(let i=0; i<Params.numBestElites; ++i)
+          this.#vecBest.push(this.#vecGenomes[i]);
+        return this;
+      }
+      /**Resets some values ready for the next epoch,
+       * kills off all the phenotypes and any poorly performing species.
+      */
+      #resetAndKill(){
+        this.#totFitAdj = 0;
+        this.#avFitAdj  = 0;
+        let L,tmp=[];
+        this.#vecSpecies.forEach(s=>{
+          if(s.stale > Params.noImprovements && s.bestScore < this.#bestFit){}else{
+            tmp.push(s.purge());
+          }
+        });
+        _.append(this.#vecSpecies, tmp, true);
+        return this;
+      }
+      /**Performs one epoch of the genetic algorithm and returns a vector of pointers to the new phenotypes.
+       * @param {number[]} scores
+       * @return {}
+       */
+      epoch(scores){
+        _.assert(scores.length == this.#vecGenomes.length, "NeatGA::Epoch(scores/ genomes mismatch)!");
+        /////begin cleanse ////////////////////////////////////////////////////////////////////////////////////
+        //1. reset appropriate values and kill off the existing phenotypes and any poorly performing species
+        //2. update and sort genomes and keep a record of the best performers
+        //3. separate the population into species of similar topology,
+        this.#resetAndKill() && this.#sortAndRecord(scores) && this.#speciate();
+        /////end cleanse /////////////////////////////////////////////////////////////////////////////////////
+        let baby2,baby,newPop=[],numSpawnedSoFar=0;
+        this.#vecSpecies.forEach(spc=>{
+          if(numSpawnedSoFar<this.#popSize){
+            let chosenBest= false,
+                rc, count=_.rounded(spc.numToSpawn());
+            while(count--){
+              if(!chosenBest){
+                chosenBest=true; baby=spc.leader.clone();
+              }else if(spc.size() == 1 || _.rand() > Params.crossOverRate){
+                //no crossOver
+                baby = spc.spawn()
+              }else{
+                let [g1,g2] = spc.randPair(5);
+                baby=g2 ? this.#crossOver(g1,g2) : g1.clone();
+              }
+              newPop.push(baby.morph(this.#genGID()));
+              if(++numSpawnedSoFar == this.#popSize){ break }
+            }
+          }
+        });
+        if(numSpawnedSoFar < this.#popSize){
+          let diff=this.#popSize - numSpawnedSoFar;
+          while(diff--)
+            newPop.push(this.tournamentSelection(int(this.#popSize/5)).clone());
+        }
+        //replace the current population with the new one
+        _.append(this.#vecGenomes,newPop,true);
+        ++this.#generation;
+        //_.log(`NeatGA: current bestFitness = ${this.#bestFit}`);
+        return this.createPhenotypes();
+      }
+      /**Cycles through all the members of the population and creates their phenotypes.
+       * @return {NeuralNet[]} the new phenotypes
+       */
+      createPhenotypes(){
+        return this.#vecGenomes.map(g=> g.createPhenotype( this.calcNetDepth(g)))
+      }
+      /**
+       * @return {number}
+       */
+      numSpecies(){ return this.#vecSpecies.length }
+      /**
+       * @return {NeuralNet[]} the n best phenotypes from the previous generation.
+       */
+      bestFromPrevGen(){
+        return this.#vecBest.map(g=> g.createPhenotype(this.calcNetDepth(g)))
+      }
+    }
+
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    const _$={
+      NeatGA, NeuralNet, Genome, NeuronGene, LinkGene, NLink, NNeuron, Species,
+      FitFunc, InnovHistory, NeuronType, InnovType, RunType,
+      configParams(options){
+        return _.inject(Params,options)
+      }
+    };
+
+    return _$;
+  }
+
+  //export--------------------------------------------------------------------
+  if(typeof module == "object" && module.exports){
+    module.exports=_module(require("@czlab/mcfud"))
+  }else{
+    gscope["io/czlab/mcfud/algo/NEAT_Buckland"]=_module
+  }
+
+})(this)
+
+
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Copyright © 2025, Kenneth Leung. All rights reserved.
+
+;(function(gscope,UNDEF){
+  "use strict";
+
+  console.log(`@czlab/crafty version: 1.5.0`);
 
 })(this);
 

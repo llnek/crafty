@@ -1339,7 +1339,7 @@
 
   //export--------------------------------------------------------------------
   if(typeof module == "object" && module.exports){
-    module.exports=_module(require("../main/core"),require("./genetic"))
+    module.exports=_module(require("@czlab/mcfud")["Core"],require("../src/algo/genetic"))
   }else{
     gscope["io/czlab/mcfud/algo/gaex"]=_module
   }
