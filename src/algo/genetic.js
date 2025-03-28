@@ -265,7 +265,7 @@
 			#neurons;
 			#actFunc;
 
-			get numNeurons(){return this.#numNeurons}
+			get numNeurons(){return this.#neurons.length}
 
 			/**
 			 * @param {number} numNeurons
@@ -276,7 +276,6 @@
 			constructor(numNeurons, numInputsPerNeuron, actFunc, wantBiasNode=true){
 				this.#neurons= _.fill(numNeurons,()=> new Neuron(this,numInputsPerNeuron,wantBiasNode));
 				this.#actFunc=actFunc;
-				this.#numNeurons=numNeurons;
 			}
 			/**
 			 * @param {number} index
@@ -324,6 +323,9 @@
 			#actFunc;
 			#layers;
 
+			get numOutputs(){return this.#numOutputs}
+			get numInputs(){return this.#numInputs}
+
 			/**
 			 * @param {number} inputs
 			 * @param {number} outputs
@@ -331,7 +333,8 @@
 			 * @param {function} actFuncOut
 			 * @param {boolean} wantBiasNode
 			 */
-			constructor(inputs, outputs, [numHidden,perHidden,actFunc], actFuncOut, wantBiasNode=true){
+			constructor(inputs, outputs, [numHidden,perHidden,actFunc], actFuncOut=null, wantBiasNode=true){
+				actFuncOut = actFuncOut || Params.sigmoid;
 				actFunc= actFunc || Params.sigmoid;
 				numHidden=numHidden||0;
 				perHidden= perHidden || 0;
@@ -353,6 +356,18 @@
 				this.#numOfWeights=this.#layers.reduce((sum,y)=>{
 					return sum + y.applyNeurons((ns)=>ns.reduce((acc,u)=> acc+u.numInputs())) },0);
 			}
+			/**
+			 * @param {function} func
+			 * @param {object} target
+			 */
+			iterLayers(func,target){
+				this.#layers.forEach(func, target);
+				return this;
+			}
+			/**
+			 * @param {number} i
+			 */
+			getLayer(i){ return this.#layers[i] }
 			/**
 			 * @param {number[]} weights
 			 */
