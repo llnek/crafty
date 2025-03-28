@@ -20,8 +20,8 @@
    */
   function _module(Mcfud){
 
-    const Basic= Mcfud ? Mcfud["Core"] : gscope["io/czlab/mcfud/algo/basic"]();
-    const Core= Mcfud ? Mcfud["Basic"] : gscope["io/czlab/mcfud/core"]();
+    const Basic= Mcfud ? Mcfud["Basic"] : gscope["io/czlab/mcfud/algo/basic"]();
+    const Core= Mcfud ? Mcfud["Core"] : gscope["io/czlab/mcfud/core"]();
 
     const {prnIter,Bag,Stack,Iterator,StdCompare:CMP}= Basic;
     const int=Math.floor;

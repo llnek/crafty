@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Copyright © 2013-2022, Kenneth Leung. All rights reserved.
+// Copyright © 2025, Kenneth Leung. All rights reserved.
 
 ;(function(gscope,UNDEF){
 
@@ -27,12 +27,16 @@
     const {is,u:_}= Core;
 
     const {NumFitness,Fitness, runGACycle,
-           hillClimb, runGASearch,Chromosome,showBest,calcStats}= GA;
+           hillClimb, runGASearch,Chromosome,ChromoNumero, showBest,calcStats}= GA;
 
     /**
      * @module mcfud/algo/gaex
      */
 
+    function _showBest(){
+
+      console.log("best=" + best.applyGenes((gs)=> gs.join("")));
+    }
     //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     /**Guess a password.
      * @memberof module:mcfud/algo/gaex
@@ -43,78 +47,76 @@
         let geneSet = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!.,".split("");
         let gs=geneSet.slice();
         let target=input.split(""),
-            N=target.length,
-            optimal= new NumFitness(N);
+            N=target.length, optimal= N;
         let params=GA.config({});
+
         function calcFit(guess){
           let sum=0;
           for(let i=0;i<N;++i)
             if(target[i]==guess[i]) ++sum;
-          return new NumFitness(sum);
+          return sum;
         }
-        function create(){
-          let genes= _.shuffle(gs).slice(0,N);
-          return new Chromosome(genes, calcFit(genes));
+
+        function create(arg){
+          return arg ? new ChromoNumero(arg, calcFit)
+                     : new ChromoNumero( _.shuffle(gs).slice(0,N), calcFit)
         }
+
         function mutate(c){
           if(_.rand() < params.mutationRate){
             let i= _.randInt(c.length);
             c[i]= _.randItem(gs);
           }
         }
+
         function crossOver(b1,b2){
-          return GA.crossOverRND(b1,b2);
+          return Chromosome.crossOverRND(b1,b2);
         }
+
         let tout, pop,best,s,extra;
         //console.log("ready...");
         if(0){
-          extra= {gen:0,maxSeconds:5,create, calcFit, mutate, crossOver, targetScore:12};
+          extra= {gen:0,maxCycles:1000,create, mutate, crossOver, targetScore:12};
           [tout, pop]= runGACycle(100,extra);
           s=calcStats(pop);
-          best=s.best;
+          best=s.alpha;
         }
+
         if(1){
-          extra= {gen:0,maxSeconds:5,maxAge:50,create, calcFit, mutate, crossOver, poolSize:6};
+          extra= {gen:0,maxSeconds:35,maxCycles:1000, maxAge:50,create, calcFit, mutate, crossOver, poolSize:6};
           [tout,best]= runGASearch(optimal,extra);
         }
+
         showBest(best,extra,tout);
-        console.log("best=" + best.genes.join(""));
       }
     }
     //CH1.test("Hello World!");
 
     //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    class CH3_Fitness extends Fitness{
-      constructor(numbersInSeqCnt, totalGap){
-        super();
-        this.numbersInSeqCnt=numbersInSeqCnt;
-        this.totalGap=totalGap;
+    class CH3Chromo extends Chromosome{
+      constructor(genes, calc, target){
+        super(genes, calc, target);
+        this.numSeq=0;
+        this.gaps=0;
+        this.recalcScore();
       }
-      toString(){
-        return `${this.numbersInSeqCnt} Sequential, ${this.totalGap} Total Gap`
-      }
-      eq(b){
-        return this.totalGap==b.totalGap &&
-               this.numbersInSeqCnt==b.numbersInSeqCnt;
-      }
-      gt(b){
-        if(this.numbersInSeqCnt != b.numbersInSeqCnt)
-          return this.numbersInSeqCnt > b.numbersInSeqCnt;
-        return this.totalGap < b.totalGap;
-      }
-      lt(b){
-        if(this.numbersInSeqCnt != b.numbersInSeqCnt)
-          return this.numbersInSeqCnt < b.numbersInSeqCnt;
-        return this.totalGap > b.totalGap;
-      }
-      score(){
-        return this.numbersInSeqCnt
+      getScore(){ return this.numSeq }
+      updateScore([f,g]){ this.numSeq=f; this.gaps=g; return this; }
+      cmpScore([numSeq,gaps]){
+        if(this.numSeq== numSeq){
+          return this.gaps< gaps ? 1 : (this.gaps > gaps) ? -1 : 0;
+        }else{
+          return this.numSeq > numSeq ? 1 : -1;
+        }
       }
       clone(){
-        return new CH3_Fitness(this.numbersInSeqCnt, this.totalGap)
+        let [f,t]= this.getScoreCalcInfo();
+        return new CH3Chromo(this._genes(), f, t);
+      }
+      compareTo(other){
+        return this.cmpScore([other.numSeq,other.gaps]);
       }
     }
-
     //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     /**Find n numbers in sorted order.
      * @memberof module:mcfud/algo/gaex
@@ -122,6 +124,8 @@
      */
     class CH3{
       static test(totalNumbers){
+        let geneSet = _.fill(100,(i)=> i);
+        let optimal= [totalNumbers, 0];
         let params= GA.config({});
         function calcFit(genes){
           let gap=0,fitness = 1;
@@ -131,11 +135,11 @@
             else
               gap += genes[i-1] - genes[i];
           }
-          return new CH3_Fitness(fitness, gap);
+          return [fitness, gap];
         }
-        function create(){
-          let g= _.shuffle(geneSet,false).slice(0,totalNumbers);
-          return new Chromosome(g, calcFit(g));
+        function create(arg){
+          return arg ? new CH3Chromo(arg,calcFit) :
+                       new CH3Chromo( _.shuffle(geneSet,false).slice(0,totalNumbers), calcFit);
         }
         function mutate(c){
           if(_.rand() < params.mutationRate){
@@ -147,18 +151,36 @@
           //return GA.crossOverPBX(a,b);//wont work!
           //return GA.crossOverRND(a,b);//ok
           //return GA.crossOverOBX(a,b);//ok
-          return GA.crossOverPMX(a,b);
+          return Chromosome.crossOverPMX(a,b);
         }
-        let optimal= new CH3_Fitness(totalNumbers, 0);
-        let geneSet = _.fill(100,(i)=> i);
-        let extra={ gen:0, calcFit,create,mutate,crossOver,poolSize:6 };
+        let extra={ maxCycles:1000, create,mutate,crossOver,poolSize:6 };
         let [tout,best] = runGASearch(optimal,extra);
         showBest(best,extra,tout);
-        console.log(best.genes.join(","));
       }
     }
     //CH3.test(20);
 
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    class CH4Chromo extends Chromosome{
+      #clashed;
+      constructor(genes, calc, target){
+        super(genes, calc, target);
+        this.#clashed=0;
+        this.recalcScore();
+      }
+      getScore(){ return this.#clashed }
+      updateScore(c){ this.#clashed=c; return this; }
+      cmpScore(s){
+        return this.#clashed < s ? 1 : (this.#clashed > s  ? -1 : 0);
+      }
+      clone(){
+        let [f,t]= this.getScoreCalcInfo();
+        return new CH4Chromo(this._genes(), f, t);
+      }
+      compareTo(other){
+        return this.cmpScore(other.getScore())
+      }
+    }
     //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     /**Solve 8 queens.
      * @memberof module:mcfud/algo/gaex
@@ -183,17 +205,6 @@
       }
       static test(N){
         let params=GA.config({});
-        function Fitness(clashQ){
-          return {
-            gt(b){ return this.value < b.value },
-            lt(b){ return this.value > b.value },
-            eq(b){ return this.value==b.value},
-            score(){ return this.value },
-            clone(){ return Fitness(this.value) },
-            toString(){ return `${this.value}` },
-            value:clashQ
-          }
-        }
         function calcFit(genes){
           //best case is rows,cols dont overlap, so we would get
           //8 and 8 in those 2 maps. For diagonals, the two diags
@@ -210,10 +221,11 @@
                 SE.set(N-1-row+col,1);
               }
             }
-          return Fitness(N*4 - ROWS.size - COLS.size - NE.size - SE.size)
+          let rc=N*4 - ROWS.size - COLS.size - NE.size - SE.size;
+          return rc;
         }
         let geneSet = _.fill(N, (i)=> i);
-        let optimal=Fitness(0);
+        let optimal=0;
         function mutate(c){
           if(_.rand()<params.mutationRate){
             let i= _.randInt(c.length);
@@ -221,20 +233,19 @@
           }
         }
         function crossOver(a,b){
-          return GA.crossOverPBX(a,b);
+          return Chromosome.crossOverPBX(a,b);
         }
         let extra= {
-          calcFit,
           mutate,
           crossOver,
-          create(){
-            let g= _.shuffle(geneSet,false).concat(_.shuffle(geneSet,false));
-            return new Chromosome(g, calcFit(g))
+          create(arg){
+            return arg ? new CH4Chromo(arg, calcFit) :
+                         new CH4Chromo( _.shuffle(geneSet,false).concat(_.shuffle(geneSet,false)), calcFit);
           }
         }
         let [tout,best]=runGASearch(optimal, extra);
         showBest(best,extra,tout);
-        console.log(""+CH4.Board(best.genes, N));
+        console.log(CH4.Board(best._genes(), N).toString());
       }
     }
     //CH4.test(8);
@@ -282,7 +293,7 @@
         //console.log("Nodes===="+Nodes.size);
         let Colors=new Map(),
             NodeIndex=new Map(),
-            optimal= new NumFitness(Rules.size);
+            optimal= Rules.size;
         let geneSet= ["Orange", "Yellow", "Green", "Blue"].map(c=>{
           Colors.set(c.charAt(0),c);
           return c.charAt(0);
@@ -290,11 +301,7 @@
         let keys=Array.from(Nodes.keys()).sort();
         keys.forEach((n,i)=> NodeIndex.set(n,i));
         function calcFit(genes){
-          let sum=0;
-          Rules.forEach((r,k)=>{
-            if(r.isValid(genes, NodeIndex)) ++sum;
-          })
-          return new NumFitness(sum);
+          return Rules.values().reduce((acc,r)=> acc + (r.isValid(genes, NodeIndex) ? 1 : 0) ,0)
         }
         function mutate(c){
           if(_.rand()<params.mutationRate){
@@ -303,69 +310,71 @@
           }
         }
         function crossOver(a,b){
-          return GA.crossOverPBX(a,b);
+          return Chromosome.crossOverPBX(a,b);
         }
-        let extra={mutate,crossOver,calcFit,create(){
-          let g= _.fill(keys.length,0).map(x=> _.randItem(geneSet));
-          return new Chromosome(g, calcFit(g));
-        }};
+        function create(arg){
+          return arg ? new ChromoNumero(arg, calcFit)
+            : new ChromoNumero(_.fill(keys.length,0).map(x=> _.randItem(geneSet)), calcFit);
+        }
+        let extra={maxCycles:1000, mutate,crossOver,create};
         let [tout, best] = runGASearch(optimal, extra);
         showBest(best,extra,tout);
         keys.forEach((k,i)=>{
-          console.log(`${k} is ${Colors.get(best.genes[i])}`);
+          console.log(`${k} is ${Colors.get(best.getGeneAt(i))}`);
         });
       }
     }
     //CH5.test();
 
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    class CH6Chromo extends Chromosome{
+      constructor(genes, calc, target){
+				super(genes, calc, target);
+
+        this.totalDifference= 0;
+        this.group1Sum=0;
+        this.group2Product=0;
+        this.duplicateCount=0;
+
+				this.recalcScore();
+			}
+			getScore(){
+        return [ this.group1Sum, this.group2Product, this.duplicateCount ];
+      }
+			updateScore([sum,prod,dups]){
+        this.duplicateCount= dups;
+        this.group2Product= prod;
+        this.group1Sum= sum;
+      }
+      #xxx(sum,prod,dups){
+        let productDifference= Math.abs(360 - prod);
+        let sumDifference= Math.abs(36 - sum);
+        return [sumDifference, productDifference, sumDifference + productDifference];
+      }
+			cmpScore([sum,prod,dups]){
+        let [sdiff_m, pdiff_m, tdiff_m]= this.#xxx( this.group1Sum, this.group2Product, this.duplicateCount);
+        let [sdiff_o, pdiff_o, tdiff_o]= this.#xxx( sum, prod, dups);
+        if(this.duplicateCount != dups){
+          return this.duplicateCount < dups ? 1 : -1;
+        }else{
+          return tdiff_m < tdiff_o ? 1 : (tdiff_m > tdiff_o ? -1 : 0) ;
+        }
+      }
+			clone(){
+				return new CH6Chromo(this._genes(), f, t);
+			}
+			compareTo(other){
+        return this.cmpScore([other.group1Sum, other.group2Product, other.duplicateCount]);
+			}
+    }
     //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     /**Solve a card problem.
      * @memberof module:mcfud/algo/gaex
      * @class
      */
     class CH6{
-      static Fitness(group1Sum, group2Product, duplicateCount){
-        let sumDifference= Math.abs(36 - group1Sum);
-        let productDifference= Math.abs(360 - group2Product);
-        return{
-          group1Sum,
-          group2Product,
-          duplicateCount,
-          sumDifference,
-          productDifference,
-          totalDifference: sumDifference + productDifference,
-          eq(b){
-            return this.group1Sum==b.group1Sum &&
-            this.group2Product==b.group2Product &&
-            this.duplicateCount==b.duplicateCount &&
-            this.sumDifference==b.sumDifference &&
-            this.productDifference==b.productDifference &&
-            this.totalDifference==b.totalDifference;
-          },
-          gt(b){
-            if(this.duplicateCount != b.duplicateCount)
-              return this.duplicateCount < b.duplicateCount;
-            return this.totalDifference < b.totalDifference;
-          },
-          lt(b){
-            if(this.duplicateCount != b.duplicateCount)
-              return this.duplicateCount > b.duplicateCount;
-            return this.totalDifference > b.totalDifference;
-          },
-          score(){
-            return this.totalDifference
-          },
-          clone(){
-            return Fitness(this.group1Sum, this.group2Product, this.duplicateCount)
-          },
-          toString(){
-            return `dupCount= ${this.duplicateCount}, totalDiff=${this.totalDifference}`
-          }
-        }
-      }
       static test(){
         let params=GA.config();
-        let optimal= CH6.Fitness(36, 360, 0);
         //A,2-10
         let geneSet = _.fill(10,(i)=>i+1);
         function calcFit(genes){
@@ -374,7 +383,7 @@
               duplicates = genes.length - new Set(genes).size;
           for(let i=0;i<5;++i) g1Sum += genes[i];
           for(let i=5;i<10;++i) g2Prod *= genes[i];
-          return CH6.Fitness(g1Sum, g2Prod, duplicates);
+          return [g1Sum, g2Prod, duplicates];
         }
         function mutate(genes){
           if(_.rand()<params.mutationRate){
@@ -389,13 +398,15 @@
             }
           }
         }
-        let extra={calcFit,mutate,optimal,create(){
-          let g= _.shuffle(geneSet,false);
-          return new Chromosome(g,calcFit(g));
-        }};
+        function create(arg){
+          return arg ? new CH6Chromo(arg, calcFit)
+            : new CH6Chromo( _.shuffle(geneSet,false), calcFit);
+        }
+        let extra={maxCycles:1000,mutate,create};
+        let optimal= [36, 360, 0];
         let [tout,best]=runGASearch(optimal, extra);
         showBest(best,extra,tout);
-        console.log(best.genes.slice(0,5).join(",") + " - " + best.genes.slice(5).join(","));
+        console.log(best._genes().slice(0,5).join(",") + " - " + best._genes().slice(5).join(","));
       }
     }
     //CH6.test();
@@ -426,7 +437,7 @@
       }
       static test(N, expectedK){
         let params=GA.config();
-        let optimal= new NumFitness(N*N);
+        let optimal= N*N;
         function getAttacks(loc){
           let out=new Map(),
               X= [-2, -1, 1, 2],
@@ -447,7 +458,7 @@
         function calcFit(genes){
           let out=new Map();
           genes.forEach(k=> getAttacks(k).forEach(p=> out.set(p.id(),1)));
-          return new NumFitness(out.size);
+          return out.size;
         }
         let allPos=[];
         for(let x=0;x<N;++x)
@@ -500,21 +511,29 @@
             genes[gi] = _.randItem(potentialKPos);
           }
         }
-        let extra={
-          calcFit,
-          mutate,
-          create(){
-            let g= _.fill(expectedK, ()=> _.randItem(nonEdgePos));
-            return new Chromosome(g,calcFit(g));
-          }
-        };
+        function create(arg){
+          return arg ? new ChromoNumero(arg,calcFit)
+            : new ChromoNumero(_.fill(expectedK, ()=> _.randItem(nonEdgePos)), calcFit);
+        }
+        let extra={maxCycles:1000, mutate,create};
         let [tout,best] = runGASearch(optimal,extra);
         showBest(best,extra,tout);
-        console.log(""+CH7.Board(best.genes,N));
+        console.log(CH7.Board(best._genes(),N).toString());
       }
     }
     //CH7.test(8,14);
 
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    class CH8Chromo extends ChromoNumero{
+			constructor(genes, calc, target){
+				super(genes, calc, target);
+			}
+      cmpScore(s){ return this.getScore()<s ? 1 : (this.getScore()>s? -1 : 0) }
+			clone(){
+				let [f,t]= this.getScoreCalcInfo();
+				return new CH8Chromo(this._genes(), f, t);
+			}
+		}
     //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     /**Solve Magic Square.
      * @memberof module:mcfud/algo/gaex
@@ -544,104 +563,89 @@
       static test(N,maxAge){
         let params=GA.config();
         let SQ= N*N;
-        let optimal= new NumFitness(0,true);
+        let optimal= 0;
         let geneSet = _.fill(SQ, (i)=> i+1);
         let expected= N* Math.floor((SQ+1)/2);
         let geneIndexes = _.fill(geneSet.length,(i)=> i);
         function calcFit(genes){
           let [rows, cols, ne, se]= CH8.getSums(genes, N),
               sums=rows.concat(cols).concat([se,ne]).filter(s=> s != expected);
-          return new NumFitness(sums.reduce((acc,v)=>{
-            acc += Math.abs(v-expected);
-            return acc;
-          },0),true);
+          return sums.reduce((acc,v)=> acc + Math.abs(v-expected),0);
         }
-        let extra={
-          gen:0,
-          calcFit,
-          maxAge,
-          mutate(genes){
-            if(_.rand()<params.mutationRate){
-              _.shuffle(geneIndexes);
-              _.swap(genes, geneIndexes[0], geneIndexes[1]);
-            }
-          },
-          create(){
-            let g= _.shuffle(geneSet.slice());
-            return new Chromosome(g,calcFit(g));
+        function mutate(genes){
+          if(_.rand()<params.mutationRate){
+            _.shuffle(geneIndexes);
+            _.swap(genes, geneIndexes[0], geneIndexes[1]);
           }
         }
+        function create(arg){
+          return arg ? new CH8Chromo(arg, calcFit)
+            : new CH8Chromo( _.shuffle(geneSet.slice()), calcFit);
+        }
+        let extra={ maxCycles:1000, maxAge, mutate, create};
         let [tout,best] = runGASearch(optimal, extra);
         showBest(best,extra,tout);
         for(let i=0;i<N;++i){
-          let row=best.genes.slice(i*N, (i+1)*N);
+          let row=best._genes().slice(i*N, (i+1)*N);
           console.log(row.join(" "));
         }
       }
     }
     //CH8.test(3,500);
 
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    class CH9Chromo extends Chromosome{
+
+			constructor(genes, calc, target){
+				super(genes, calc, target);
+        this.totalWeight=0;
+        this.totalVolume=0;
+        this.totalValue=0;
+        this.recalcScore();
+			}
+      getScore(){
+        return [ this.totalWeight, this.totalVolume, this.totalValue ];
+      }
+      updateScore([totalWeight, totalVolume, totalValue]){
+        this.totalWeight= totalWeight;
+        this.totalVolume= totalVolume;
+        this.totalValue= totalValue;
+      }
+			cmpScore([totalWeight, totalVolume, totalValue]){
+        if(this.totalValue != totalValue)
+          return this.totalValue > totalValue ? 1 : -1;
+        if(this.totalWeight != totalWeight)
+          return this.totalWeight < totalWeight ? 1 : -1;
+        return this.totalVolume < totalVolume ? 1 : (this.totalVolume > totalVolume ? -1 : 0);
+      }
+			clone(){
+				let [f,t]= this.getScoreCalcInfo();
+				return new CH9Chromo(this._genes(), f, t);
+			}
+      compareTo(o){
+        return this.cmpScore(o.getScore());
+      }
+		}
     //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     /**Solve Knapsack problem.
      * @memberof module:mcfud/algo_go
      * @class
      */
     class CH9{
-      static Fitness(totalWeight, totalVolume, totalValue){
-        return{
-          totalWeight, totalVolume, totalValue,
-          toString(){
-            return `totalWeight=${this.totalWeight}, totalVolume=${this.totalVolume}, totalValue=${this.totalValue}`
-          },
-          clone(){
-            return Fitness(this.totalWeight, this.totalVolume, this.totalValue)
-          },
-          score(){
-            return this.totalWeight+ this.totalVolume+ this.totalValue
-          },
-          eq(b){
-            return this.totalWeight==b.totalWeight &&
-              this.totalVolume==b.totalVolume &&
-              this.totalValue==b.totalValue;
-          },
-          lt(b){
-            if(this.totalValue != b.totalValue)
-              return this.totalValue < b.totalValue;
-            if(this.totalWeight != b.totalWeight)
-              return this.totalWeight > b.totalWeight;
-            return this.totalVolume > b.totalVolume;
-          },
-          gt(b){
-            if(this.totalValue != b.totalValue)
-              return this.totalValue > b.totalValue;
-            if(this.totalWeight != b.totalWeight)
-              return this.totalWeight < b.totalWeight;
-            return this.totalVolume < b.totalVolume;
-          }
-        }
-      }
       static ItemQuantity(item, quantity){
         return{
           item,quantity,
-          toString(){
-            return `{item=${this.item.name}, qty=${this.quantity}}`
-          },
-          eq(b){
-            return this.item === b.item && this.quantity == b.quantity
-          }
+          toString(){ return `{item=${this.item.name}, qty=${this.quantity}}` },
+          eq(b){ return this.item === b.item && this.quantity == b.quantity }
         }
       }
       static Resource(name, value, weight, volume){
-        return{name,value,weight,volume, eq(b){
-          return this===b;
-        }}
+        return{name,value,weight,volume, eq(b){ return this===b; }}
       }
       static Window(min,max,size){
         return{
           min,max,size,
-          slide(){
-            this.size = this.size>this.min? this.size - 1: this.max;
-          }
+          slide(){ this.size = this.size>this.min? this.size - 1: this.max; }
         }
       }
       static test(){
@@ -664,7 +668,7 @@
             totalVolume += g.item.volume * c;
             totalValue += g.item.value * c;
           });
-          return CH9.Fitness(totalWeight, totalVolume, totalValue);
+          return [totalWeight, totalVolume, totalValue];
         }
         function maxQ(item, maxWeight, maxVolume){
           return int(Math.min(maxWeight/item.weight, maxVolume/item.volume)) }
@@ -684,7 +688,7 @@
           let m= maxQ(item, maxWeight, maxVolume);
           return m>0? CH9.ItemQuantity(item, m) : null;
         }
-        function create(){
+        function create(arg){
           let genes = [],
               remainWeight=MaxWeight,
               remainVolume = MaxVolume,
@@ -697,13 +701,13 @@
               remainVolume -= g.quantity * g.item.volume;
             }
           }
-          return new Chromosome(genes,calcFit(genes));
+          return arg ? new CH9Chromo(arg, calcFit) : new CH9Chromo(genes,calcFit);
         }
         function mutate(genes){
           if(_.rand()>params.mutationRate){return}
-          let fitness = calcFit(genes),
-              remainWeight = MaxWeight - fitness.totalWeight,
-              remainVolume = MaxVolume - fitness.totalVolume,
+          let [totalWeight, totalVolume, totalValue]= calcFit(genes),
+              remainWeight = MaxWeight - totalWeight,
+              remainVolume = MaxVolume - totalVolume,
               removing = genes.length>1 &&  _.randInt2(0, 10) == 0;
           let g,item,index;
           window.slide();
@@ -741,22 +745,27 @@
             genes.splice(index,1);
           }
         }
-        let extra={
-          gen:0,
-          maxAge:50,
-          mutate,
-          create,
-          calcFit
-        };
+        let extra={ maxCycles:1000, maxAge:50, mutate, create };
         let [tout,best] = runGASearch(optimal,extra);
         showBest(best,extra,tout);
-        best.genes.forEach(g=>{
+        best._genes().forEach(g=>{
           console.log(`item=${g.item.name}, quantity=${g.quantity}`)
         });
       }
     }
     //CH9.test();
 
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    class CH10Chromo extends ChromoNumero{
+			constructor(genes, calc, target){
+				super(genes, calc, target);
+			}
+			cmpScore(s){ return this.getScore()<s ? 1 : (this.getScore()>s? -1 : 0) }
+			clone(){
+				let [f,t]= this.getScoreCalcInfo();
+				return new CH10Chromo(this._genes(), f, t);
+			}
+		}
     //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     /**Solving Linear Equations.
      * @memberof module:mcfud/algo_go
@@ -802,13 +811,13 @@
         let window = CH10.Window(Math.max(1, int(geneSet.length /(2 * MaxAge))),
                                  Math.max(1, int(geneSet.length / 3)), int(geneSet.length / 2));
         let geneIndexes = _.fill(numUnknowns,(i)=>i);
-        let optimal= CH10.Fitness(0);
+        let optimal= 0;
         function calcFit(genes){
           let v= equations.reduce((acc,e)=>{
             acc += Math.abs(e(genes));
             return acc;
           },0);
-          return CH10.Fitness(v);
+          return v;
         }
         function mutate(genes){
           if(_.rand()>params.mutationRate){return}
@@ -827,19 +836,14 @@
             genes[index] = geneSet[genesetIndex];
           }
         }
-        let extra={
-          maxAge:MaxAge,
-          gen:0,
-          mutate,
-          calcFit,
-          create(){
-            let g= _.shuffle(geneSet.slice()).slice(0,numUnknowns);
-            return new Chromosome(g,calcFit(g));
-          }
-        };
+        let extra={ maxAge:MaxAge, maxCycles:1000, mutate, create};
+        function create(arg){
+          return arg ? new CH10Chromo(arg, calcFit)
+            : new CH10Chromo(_.shuffle(geneSet.slice()).slice(0,numUnknowns), calcFit);
+        }
         let [tout,best] = runGASearch(optimal, extra);
         showBest(best,extra,tout);
-        console.log(best.genes.join(","));
+        console.log(best._genes().join(","));
         console.log(EQS.join("=0\n"));
       }
     }
@@ -865,7 +869,7 @@
       static test(){
         let params=GA.config();
         let geneSet = _.fill(9,(i)=>i+1);
-        let optimal= new NumFitness(100);
+        let optimal= 100;
         function indexRow(index){ return int(index / 9)}
         function indexColumn(index){ return index % 9 }
         function rowColumnSection(row, column){ return int(row / 3) * 3 + int(column / 3) }
@@ -907,7 +911,7 @@
           if(R){
             f= (1 + indexRow(R.otherIndex)) * 10  + (1 + indexColumn(R.otherIndex));
           }
-          return new NumFitness(f);
+          return f;
         }
         function shuffleInPlace(genes, first, last){
           while(first < last){
@@ -934,23 +938,29 @@
           let start = row * 9;
           _.swap(genes, selectedRule.otherIndex, _.randInt2(start, genes.length-1));
         }
-        let extra={
-          maxAge:50,
-          gen:0,
-          mutate,
-          calcFit,
-          create(){
-            let g= _.shuffle(_.fill(9,0).map(x=> _.fill(9,(i)=>i+1)).flat())
-            return new Chromosome(g,calcFit(g));
-          }
+        let extra={ maxAge:50, maxCycles:1000, mutate, create};
+        function create(arg){
+          return arg ? new ChromoNumero(arg, calcFit)
+            : new ChromoNumero( _.shuffle(_.fill(9,0).map(x=> _.fill(9,(i)=>i+1)).flat()), calcFit);
         }
         let [tout,best] = runGASearch(optimal,extra);
         showBest(best,extra,tout);
-        _.partition(9, best.genes).forEach(r=> console.log(r.join(",")));
+        _.partition(9, best._genes()).forEach(r=> console.log(r.join(",")));
       }
     }
     //CH11.test();
 
+    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    class CH12Chromo extends ChromoNumero{
+			constructor(genes, calc, target){
+				super(genes, calc, target);
+			}
+			cmpScore(s){ return this.getScore()<s ? 1 : (this.getScore()>s? -1 : 0) }
+			clone(){
+				let [f,t]= this.getScoreCalcInfo();
+				return new CH12Chromo(this._genes(), f, t);
+			}
+		}
     //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     /**Solving Travel Salesman's Problem.
      * @memberof module:mcfud/algo_go
@@ -959,17 +969,6 @@
     class CH12{
       static test(){
         let params=GA.config();
-        function Fitness(totalDistance){
-          return{
-            totalDistance,
-            eq(b){ return this.totalDistance==b.totalDistance },
-            gt(b){ return this.totalDistance < b.totalDistance },
-            lt(b){ return this.totalDistance > b.totalDistance },
-            score(){return this.totalDistance},
-            clone(){ return Fitness(this.totalDistance) },
-            toString(){ return `${this.totalDistance}` }
-          }
-        }
         function getDist(locationA, locationB){
           let sideA = locationA[0] - locationB[0];
           let sideB = locationA[1] - locationB[1];
@@ -983,7 +982,7 @@
             e= idToLocationLookup[genes[i + 1]];
             d += getDist(s, e);
           }
-          return Fitness(Math.round(d));
+          return Math.round(d);
         }
         function mutate(genes){
           if(_.rand()>params.mutationRate){return}
@@ -994,16 +993,16 @@
             count -= 1;
             _.shuffle(ix);
             _.swap(genes, ix[0],ix[1]);
-            if(calcFit(genes).gt(f0)) return;
+            if(calcFit(genes) < f0) return;
           }
         }
         function Pair(a,b){
           if(a<b){ let t=a; a=b;b=a; }
           return{a,b,id(){return `${this.a},${this.b}`}}
         }
-        function crossOver(parentGenes, donorGenes){
-          parentGenes=parentGenes.slice();
-          donorGenes=donorGenes.slice();
+        function crossOver(p1, p2){
+          let parentGenes=p1.copyGenes();
+          let donorGenes=p2.copyGenes();
           let p,pairs=new Map();
           p=Pair(donorGenes[0],_.last(donorGenes));
           pairs.set(p.id(),[0,p]);
@@ -1051,7 +1050,7 @@
             }
             cg=[];
             runs.forEach(r=> cg.push(...r));
-            if(calcFit(cg).gt(f0)) return [cg,cg];
+            if(calcFit(cg) < f0) return [cg,cg];
           }
           cg.forEach((v,i)=>{
             parentGenes[i]=v;
@@ -1065,19 +1064,15 @@
           "A": [4, 7], "B": [2, 6], "C": [0, 5], "D": [1, 3],
           "E": [3, 0], "F": [5, 1], "G": [7, 2], "H": [6, 4] };
         let optimal= calcFit(geneSet);
-        let extra={
-          gen:0, maxAge:500, poolSize:25,
-          crossOver,
-          calcFit,
-          mutate,
-          create(){
-            let g= _.shuffle(geneSet,false);
-            return new Chromosome(g,calcFit(g));
-          }
+        let extra={ maxCycles:1000, maxAge:500, poolSize:25, crossOver, mutate, create};
+        function create(arg){
+          return arg ? new CH12Chromo(arg, calcFit)
+            : new CH12Chromo( _.shuffle(geneSet,false), calcFit);
         }
         let [tout,best] = runGASearch(optimal, extra);
+        //console.log("optimal= " + optimal);
         showBest(best,extra,tout);
-        console.log(best.genes.join(" -> "));
+        console.log(best._genes().join(" -> "));
       }
     }
     //CH12.test();
@@ -1093,12 +1088,12 @@
         let bitValues=[512, 256, 128, 64, 32, 16, 8, 4, 2, 1];
         let numBits= bitValues.length;
         let geneSet = [0,1];
-        let optimal= new NumFitness(3.14159);
+        let optimal=  3.14159;
         function calcFit(genes){
           let denominator = getDenominator(genes, bitValues);
-          if(denominator == 0) return new NumFitness(0);
+          if(denominator == 0) return 0;
           let ratio = getNumerator(genes, bitValues) / denominator;
-          return new NumFitness(Math.PI - Math.abs(Math.PI - ratio));
+          return Math.PI - Math.abs(Math.PI - ratio);
         }
         function bitsToInt(bits){
           let result = 0;
@@ -1123,11 +1118,11 @@
             genes[denominatorIndex] = 1 - genes[denominatorIndex];
           }
         }
-        let extra={
-          gen:0, maxAge:250, calcFit,mutate,create(){
-            let g= _.fill(bitValues.length*2,0).map(x=> _.randItem(geneSet));
-            return new Chromosome(g,calcFit(g));
-          }};
+        let extra={ maxCycles:1000, maxAge:250, create,mutate};
+        function create(arg){
+          return arg ? new ChromoNumero(arg, calcFit)
+            : new ChromoNumero( _.fill(bitValues.length*2,0).map(x=> _.randItem(geneSet)), calcFit);
+        }
         let [tout,best] = runGASearch(optimal, extra);
         showBest(best,extra,tout);
       }
@@ -1214,7 +1209,7 @@
       }
       static test(){
         let params=GA.config();
-        let extra,inputs = new Map();
+        let inputs = new Map();
         let maxLength=50;
         let rules = [[[false, false], false],
                  [[false, true], true],
@@ -1253,7 +1248,7 @@
             _.zip(sourceLabels, rule[0], inputs);
             if(circuit.getOutput() == rule[1]) ++rulesPassed;
           });
-          return new NumFitness(rulesPassed)
+          return rulesPassed;
         }
         function createGene(index){
           let gateType= index<sources.length ? sources[index] : _.randItem(gates);
@@ -1280,27 +1275,18 @@
             if(indexesUsed.length == 0) return;
             let index = _.randItem(indexesUsed);
             childGenes[index] = fnCreateGene(index);
-            if(fnGetFitness(childGenes).gt(f0)) return;
+            if(fnGetFitness(childGenes) > f0) return;
           }
         }
-        let optimal= new NumFitness(rules.length);
+        let optimal= rules.length;
         //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        function fnOptimizationFunction(variableLength){
+        function fnOptimizationFunction(variableLength, extra){
           maxLength = variableLength;
-          extra={
-            calcFit,
-            mutate: fnMutate,
-            create: fnCreate,
-            poolSize:3,
-          }
-          //console.log("before cycle======");
-          let r= runGASearch(optimal, extra);
-          //console.log("rrr===="+r);
-          return r[1];
+          return runGASearch(optimal, extra)[1];
         }
-        function fnCreate(){
-          let g= _.fill(maxLength,0).map((v,i)=> createGene(i));
-          return new Chromosome(g,calcFit(g));
+        function fnCreate(arg){
+          return arg ? new ChromoNumero(arg, calcFit)
+            : new ChromoNumero( _.fill(maxLength,0).map((v,i)=> createGene(i)), calcFit);
         }
         function fnMutate(genes){
           if(_.rand()<params.mutationRate)
@@ -1308,27 +1294,26 @@
         }
         //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         function fnIsImprovement(currentBest, child){
-          return child.fitness.eq(new NumFitness(rules.length)) &&
-                                  nodesToCircuit(child.genes)[1].length < nodesToCircuit(currentBest.genes)[1].length
+          return child.getScore()==rules.length &&
+            nodesToCircuit(child._genes())[1].length < nodesToCircuit(currentBest._genes())[1].length
         }
         //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         function fnIsOptimal(child){
-          return child.fitness.eq(new NumFitness(rules.length)) &&
-                                  nodesToCircuit(child.genes)[1].length <= expectedLength;
+          return child.getScore() == rules.length &&
+            nodesToCircuit(child._genes())[1].length <= expectedLength;
         }
         //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         function fnGetNextFeatureValue(currentBest){
-          return nodesToCircuit(currentBest.genes)[1].length
+          return nodesToCircuit(currentBest._genes())[1].length
         }
 
         //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        let X={}
-        let best = GA.hillClimb(fnOptimizationFunction, fnIsImprovement,
-                                fnIsOptimal, fnGetNextFeatureValue, maxLength, X);
-        let cc=nodesToCircuit(best.genes)[0];
-        GA.showBest(best,X);
+        let extra={ maxCycles:100, mutate: fnMutate, create: fnCreate, poolSize:3 }
+        let [tout, best] = GA.hillClimb(fnOptimizationFunction, fnIsImprovement,
+                                        fnIsOptimal, fnGetNextFeatureValue, maxLength, extra);
+        let cc=best ? nodesToCircuit(best._genes())[0] : "Op failed!";
+        GA.showBest(best,extra);
         console.log(`${cc}`);
-        //console.log(`f=${best.fitness.score()}`);
       }
     }
     //Circuits.test();

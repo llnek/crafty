@@ -27,6 +27,6 @@
     "gulp-terser": "^2.1.0"
   },
   "dependencies": {
-    "@czlab/mcfud": "^1.5.0"
+    "@czlab/mcfud": "file:../czlab-mcfud-1.5.0.tgz"
   }
 }
