@@ -6670,7 +6670,7 @@
 		 */
 		class Chromosome{
 
-			#scoreCalcTarget;
+			#scoreCalcExtra;
 			#scoreCalc;
 			#genes;
 			#age;
@@ -6681,11 +6681,11 @@
 			/**
 			 * @param {any[]} genes
 			 * @param {func} scoreCalculator
-			 * @param {object} target
+			 * @param {object} scoreCalcExtra
 			 */
-			constructor(genes, scoreCalculator, target){
+			constructor(genes, scoreCalculator, scoreCalcExtra){
+				this.#scoreCalcExtra= scoreCalcExtra;
 				this.#scoreCalc=scoreCalculator;
-				this.#scoreCalcTarget= target;
 				this.#genes=genes;
 				this.#age=0;
 			}
@@ -6693,7 +6693,7 @@
 			 * @return {array}
 			 */
 			getScoreCalcInfo(){
-				return [this.#scoreCalc, this.#scoreCalcTarget]
+				return [this.#scoreCalc, this.#scoreCalcExtra]
 			}
 			_genes(){ return this.#genes }
 			/**
@@ -6717,10 +6717,15 @@
 				return this.#genes.length
 			}
 			/**
-			 * @return {any[]} copy of our genes
+			 * @return {any[]} deep copy of our genes
 			 */
 			copyGenes(){
-				return this.#genes.slice()
+				let yes, a= this.#genes[0];
+				try{
+					yes= is.obj(a) && is.fun(a.clone);
+				}catch(e){
+				}
+				return yes ? this.#genes.map(g=> g.clone()) : this.#genes.slice();
 			}
 			/**
 			 * @return {any} fitness score
@@ -6740,8 +6745,7 @@
 			/**
 			*/
 			recalcScore(){
-				this.updateScore(this.#scoreCalcTarget ?
-					                 this.#scoreCalc.call(this.#scoreCalcTarget, this.#genes) : this.#scoreCalc(this.#genes));
+				this.updateScore( this.#scoreCalc(this.#genes, this.#scoreCalcExtra));
 			}
 			/**
 			 * @param {Chromosome} other
@@ -7066,7 +7070,7 @@
 			cmpScore(s){ return this.#score>s ? 1 : (this.#score<s? -1 : 0) }
 			clone(){
 				let [f,t]= this.getScoreCalcInfo();
-				return new ChromoNumero(this._genes(), f, t);
+				return new ChromoNumero(this.copyGenes(), f, t);
 			}
 			compareTo(other){
 				return this.cmpScore(other.getScore());
@@ -7228,6 +7232,35 @@
       }
     }
 
+		/**
+		 * @class
+		 */
+		class NeuralGA{
+			#generation;
+			#extra;
+			#popSize;
+			#vecPop;
+			constructor(size, {create,mutate,crossOver}){
+				this.#extra={create, mutate, crossOver};
+				this.#generation=1;
+				this.#popSize=size;
+				this.#vecPop= _genPop(size, this.#extra);
+			}
+			curGen(){
+				return this.#generation;
+			}
+			epoch(scores){
+				_.assert(scores.length == this.#vecPop.length, "GA::Epoch(scores/ chromosomes mismatch)!");
+				this.#vecPop.forEach((p,i)=> p.updateScore(scores[i]));
+				this.#vecPop= _genPop(this.#vecPop, this.#extra);
+				this.#generation += 1;
+				return this.createPhenotypes();
+			}
+			createPhenotypes(){
+				return this.#vecPop;
+			}
+		}
+
 		//;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 		const _$={
 
@@ -7237,6 +7270,8 @@
 
 			ChromoNumero,
 			Chromosome,
+
+			NeuralGA,
 
 			/**
 			 * @memberof module:mcfud/algo/NNetGA

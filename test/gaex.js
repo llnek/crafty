@@ -948,7 +948,7 @@
         _.partition(9, best._genes()).forEach(r=> console.log(r.join(",")));
       }
     }
-    //CH11.test();
+    CH11.test();
 
     //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     class CH12Chromo extends ChromoNumero{
