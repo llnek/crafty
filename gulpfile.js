@@ -12,6 +12,7 @@ const jsFiles = [
   "src/algo/search.js",
   "src/algo/graph.js",
   "src/algo/genetic.js",
+  "src/algo/DQL.js",
   "src/algo/maze.js",
   "src/algo/minimax.js",
   "src/algo/negamax.js",
