@@ -7609,13 +7609,17 @@
       #gamma;
       #decayRate;
       #qtable;
-      constructor(alpha,gamma,minEpsilon,maxEpsilon,decayRate){
+      #options;
+      constructor(alpha,gamma,minEpsilon,maxEpsilon,decayRate,options){
         this.#maxEpsilon=maxEpsilon;
         this.#minEpsilon=minEpsilon;
         this.#decayRate=decayRate;
         this.#alpha=alpha;
         this.#gamma=gamma;
         this.#qtable = new Map();
+        this.#options= options ?? _.inject({}, options);
+        if(!this.#options.randActionFunc)
+          this.#options.randActionFunc= function(a){ return _.randItem(a) };
       }
       #decodeKey(state){
         return (is.str(state) ||
@@ -7646,8 +7650,11 @@
         this.#safeGetState(state).set(action, nv);
       }
       getAction(state, listOfActions){
-        if(_.rand() < this.#maxEpsilon)
-          return _.randItem(listOfActions);
+        if(_.rand() < this.#maxEpsilon){
+          let rcode= this.#options.randActionFunc(listOfActions);
+          console.log(`Getting next random action... ${rcode}`);
+          return rcode;
+        }
         //choose action with highest q-value
         let max= -Infinity,
             rs= listOfActions.reduce((acc, a, i)=> {
@@ -7657,7 +7664,9 @@
               return acc;
             },[]);
         let choices= rs.filter(a=> a[1] == max);
-        return _.randItem(choices)[0];
+        let rcode= _.randItem(choices)[0];
+        console.log(`Getting bellman's next action... ${rcode} with epsilon = ${this.#maxEpsilon}`);
+        return rcode;
       }
       decayEpsilon(episode){
         this.#maxEpsilon = this.#minEpsilon + (this.#maxEpsilon - this.#minEpsilon) * Math.exp(-this.#decayRate *episode);
