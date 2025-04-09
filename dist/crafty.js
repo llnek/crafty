@@ -9910,12 +9910,8 @@
       maxNNetNeurons:100,
       numBestElites:4,
       fitFunc: function(seed=0){ return new FitFunc(seed) },
-      sigmoid: function(netinput, response){
-        return 1 / ( 1 + Math.exp(-netinput / response))
-      },
-      sigmoid2: function(x){
-        //y=1/(1+e^(-x))
-        return 1 / (1 + Math.pow(Math.E, -4.9*x))
+      sigmoid: function(x){
+        return 1 / ( 1 + Math.exp(-x));
       }
     };
 
@@ -10571,7 +10567,7 @@
           //now deal with the other neurons...
           this.#vecNeurons.forEach(obj=>{
             if(!_isINPUT(obj,true)){
-              obj.output = Params.sigmoid(obj.funcOverInLinks(_sum), obj.activation);
+              obj.output = Params.sigmoid(obj.funcOverInLinks(_sum)/ obj.activation);
               _isOUTPUT(obj) ? outputs.push(obj.output) : 0;
             }
           });
