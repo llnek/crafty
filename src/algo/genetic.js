@@ -25,7 +25,7 @@
     const {u:_, is}= Core;
 
 		/**
-     * @module mcfud/algo/NNetGA
+     * @module mcfud/algo/ChromoGA
      */
 
     //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,293 +140,6 @@
 				this.#bestScore=0;
 				this.#worstScore=0;
 				this.#best=UNDEF;
-			}
-		}
-
-		//;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-		/**
-		 * @property {number} activation
-		 * @property {number} error
-		 * @class
-		 */
-		class Neuron{
-
-			#activation;
-			#weights;
-			#parent;
-			#error;
-			#hasBias;
-
-			get activation(){return this.#activation}
-			set activation(n){this.#activation=n}
-
-			get error(){return this.#error}
-			set error(e){this.#error=e}
-
-			/**
-			 * @param {NeuronLayer} layer
-			 * @param {number} inputs
-			 * @param {boolean} wantBiasNode
-			 */
-			constructor(layer,inputs,wantBiasNode=true){
-				const ws= _.fill(inputs, ()=> _.randMinus1To1());
-				if(wantBiasNode)
-					ws.push(_.randMinus1To1());
-				this.#parent=layer;
-				this.#activation=0;
-				this.#weights=ws;
-				this.#error=0;
-				this.#hasBias=wantBiasNode;
-			}
-			/**
-			 * @return {boolean}
-			 */
-			hasBias(){
-				return this.#hasBias
-			}
-			/**
-			 * @return {number}
-			 */
-			numInputs(){
-				return this.#weights.length
-			}
-			/**
-			 * @return {any} undefined if no bias
-			 */
-			getBias(){
-				return this.#hasBias ? this.#weights.at(-1) : undefined;
-			}
-			/**
-			 * @param {any} b
-			 */
-			setBias(b){
-				if(this.#hasBias)
-					this.#weights.with(-1, b);
-				return this;
-			}
-			/**
-			 * param {number} i index pos
-			 * @return {any}
-			 */
-			getWeight(i){
-				return this.#weights[i]
-			}
-			/**
-			 * @param {number} i index pos
-			 * @param {any} w
-			 */
-			setWeight(i,w){
-				_.assert(i>=0&&i<this.#weights.length,"bad index into weights");
-				this.#weights[i]=w;
-				return this;
-			}
-			/**
-			 * @param {function} func
-			 * @param {object} target
-			 */
-			iterWeights(func, target){
-				this.#weights.forEach(func, target);
-				return this;
-			}
-			/**
-			 * @param {function} func
-			 * @param {object} target
-			 * @return {any} result of calling func.
-			 */
-			applyWeights(func, target){
-				return target ? func.call(target, this.#weights) : func(this.#weights)
-			}
-			/**
-			 * @param {any[]} inputs
-			 * @param {function} actFunc activation function
-			 */
-			update(inputs,actFunc){
-				let last= this.#hasBias ? this.#weights.length-1 : this.#weights.length;
-				let sum=0;
-				_.assert(inputs.length>=last, "Incompatible input size for neuron update.");
-				for(let i=0; i < last; ++i){
-					sum += this.#weights[i] * inputs[i];
-				}
-				if(this.#hasBias)
-					sum += this.#weights.at(-1) * Params.BIAS;
-				return this.#activation= actFunc(sum/Params.ACTIVATION_RESPONSE);
-			}
-		}
-
-		//;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-		/**
-		 * @property {number} numNeurons
-		 * @property {Neuron[]} neurons
-		 * @class
-		 */
-		class NeuronLayer{
-
-			#numNeurons;
-			#neurons;
-			#actFunc;
-
-			get numNeurons(){return this.#neurons.length}
-
-			/**
-			 * @param {number} numNeurons
-			 * @param {number} numInputsPerNeuron
-			 * @param {function} actFunc
-			 * @param {boolean} wantBiasNodes
-			 */
-			constructor(numNeurons, numInputsPerNeuron, actFunc, wantBiasNode=true){
-				this.#neurons= _.fill(numNeurons,()=> new Neuron(this,numInputsPerNeuron,wantBiasNode));
-				this.#actFunc=actFunc;
-			}
-			/**
-			 * @param {number} index
-			 * @return the chosen Neuron
-			 */
-			neuronAt(i){
-				return this.#neurons[i]
-			}
-			/**
-			 * @param {function} cb
-			 * @param {object} target
-			 */
-			iterNeurons(cb, target){
-				this.#neurons.forEach(cb, target);
-				return this;
-			}
-			/**
-			 * @param {function} func
-			 * @param {object} target
-			 * @return result of calling func(neurons)
-			 */
-			applyNeurons(func, target){
-				return target ? func.call(target, this.#neurons) : func(this.#neurons)
-			}
-			/**
-			 * @param {any[]} inputs
-			 * @return {any[]} array of activations
-			 */
-			update(inputs){
-				return this.#neurons.map(u=> u.update(inputs, this.#actFunc))
-			}
-		}
-
-		//;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-		/**
-		 * @class
-		 */
-		class NeuralNet{
-
-			#neuronsPerHidden;
-			#numHidden;
-			#numOutputs;
-			#numInputs;
-			#numOfWeights;
-			#actFunc;
-			#layers;
-
-			get numOutputs(){return this.#numOutputs}
-			get numInputs(){return this.#numInputs}
-
-			/**
-			 * @param {number} inputs
-			 * @param {number} outputs
-			 * @param {any[]} hidden
-			 * @param {function} actFuncOut
-			 * @param {boolean} wantBiasNode
-			 */
-			constructor(inputs, outputs, [numHidden,perHidden,actFunc], actFuncOut=null, wantBiasNode=true){
-				actFuncOut = actFuncOut || Params.sigmoid;
-				actFunc= actFunc || Params.sigmoid;
-				numHidden=numHidden||0;
-				perHidden= perHidden || 0;
-				//create the layers of the network
-				this.#layers=(function(out){
-					if(numHidden>0){
-						out.push(new NeuronLayer(perHidden, inputs, actFunc,wantBiasNode));
-						for(let i=0; i<numHidden-1; ++i)
-							out.push(new NeuronLayer(perHidden,perHidden, actFunc, wantBiasNode));
-					}
-					return _.conj(out, new NeuronLayer(outputs, numHidden>0?perHidden:inputs, actFuncOut, wantBiasNode));
-				})([]);
-
-				this.#neuronsPerHidden=perHidden;
-				this.#numHidden=numHidden;
-				this.#numInputs=inputs;
-				this.#numOutputs=outputs;
-
-				this.#numOfWeights=this.#layers.reduce((sum,y)=>{
-					return sum + y.applyNeurons((ns)=>ns.reduce((acc,u)=> acc+u.numInputs())) },0);
-			}
-			/**
-			 * @param {function} func
-			 * @param {object} target
-			 */
-			iterLayers(func,target){
-				this.#layers.forEach(func, target);
-				return this;
-			}
-			/**
-			 * @param {number} i
-			 */
-			getLayer(i){ return this.#layers[i] }
-			/**
-			 * @param {number[]} weights
-			 */
-			putWeights(weights){
-				_.assert(weights.length>=this.#numOfWeights,"bad input to putWeights");
-				let pos=0;
-				this.#layers.forEach(y=> y.iterNeurons(n=> n.iterWeights((w,i,arr)=>{ arr[i]=weights[pos++] })));
-			}
-			/**
-			 * @return {any[]}
-			 */
-			getWeights(){
-				const out=[];
-				for(let y,i=0, z=this.#numHidden+1; i<z; ++i){
-					y=this.#layers[i];
-					y.iterNeurons(n=> n.iterWeights(w=> out.push(w)))
-				}
-				return out;
-			}
-			/**
-			 * @return {number}
-			 */
-			getNumberOfWeights(){
-				return this.#numOfWeights
-			}
-			/**Same as update.
-			 * @param {any[]}
-			 * @return {any[]}
-			 */
-			feedForward(inputs){
-				return this.update(inputs)
-			}
-			/**
-			 * @param {any[]} inputs
-			 * @return {any[]}
-			 */
-			update(inputs){
-				_.assert(inputs.length >= this.#numInputs,"invalid input size");
-				let out=[];
-				this.#layers.forEach((y,i)=>{
-					if(i>0)
-						inputs=out;
-					out=y.update(inputs)
-				});
-				return _.assert(out.length == this.#numOutputs, "out length incorrect") ? out : [];
-			}
-			/**
-			 * @return {any[]}
-			 */
-			calcSplitPoints(){
-				let pts= [],
-						pos = 0;
-
-				this.#layers.forEach(y=> y.iterNeurons(u=>{
-					pos += u.numInputs();
-					pts.push(pos-1)
-				}));
-
-				return pts;
 			}
 		}
 
@@ -1003,7 +716,7 @@
 		/**
 		 * @class
 		 */
-		class NeuralGA{
+		class ChromoGA{
 			#generation;
 			#extra;
 			#popSize;
@@ -1032,14 +745,10 @@
 		//;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 		const _$={
 
-			NeuronLayer,
-			Neuron,
-			NeuralNet,
-
 			ChromoNumero,
 			Chromosome,
 
-			NeuralGA,
+			ChromoGA,
 
 			/**
 			 * @memberof module:mcfud/algo/NNetGA
@@ -1302,7 +1011,7 @@
   if(typeof module == "object" && module.exports){
     module.exports=_module(require("@czlab/mcfud")["Core"])
   }else{
-    gscope["io/czlab/mcfud/algo/NNetGA"]=_module
+    gscope["io/czlab/mcfud/algo/ChromoGA"]=_module
   }
 
 })(this)

@@ -20,7 +20,7 @@
 
   /**Create the module.
   */
-  function _module(So,Se,Gr,Mz,Ge,Min,Neg,N_C,N_B){
+  function _module(So,Se,Gr,Mz,Ge,Min,Neg,Dql,N_C,N_B){
     return {
       Sort:So,
       Search:Se,
@@ -29,8 +29,9 @@
       Genetic:Ge,
       Minimax:Min,
       Negamax:Neg,
-      Neat_CBullet:N_C,
-      Neat_Buckland:N_B
+      DQL:Dql,
+      NNet:N_C,
+      NEAT:N_B
     }
   }
 
@@ -44,8 +45,9 @@
       require("algo/genetic.js"),
       require("algo/minimax.js"),
       require("algo/negamax.js"),
-      require("algo/NEAT_CBullet.js"),
-      require("algo/NEAT_Buckland.js")
+      require("algo/DQL.js"),
+      require("algo/nnet.js"),
+      require("algo/NEAT.js")
     );
   }else{
   }

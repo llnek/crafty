@@ -20,7 +20,7 @@
    */
   function _module(Core,GA){
 
-    if(!GA) GA= gscope["io/czlab/mcfud/algo/NNetGA"]();
+    if(!GA) GA= gscope["io/czlab/mcfud/algo/ChromoGA"]();
     if(!Core) Core= gscope["io/czlab/mcfud/core"]();
 
     const int=Math.floor;
