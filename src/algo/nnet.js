@@ -417,7 +417,7 @@
           }));
         }
 
-        if(1){
+        if(0){
           console.log("Debug NeuralNet...");
           this.#vecNodes.forEach(n=> console.log(n.toJSON()));
         }
