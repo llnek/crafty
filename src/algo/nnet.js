@@ -433,6 +433,10 @@
         this.#vecNodes.filter(n=> _isINPUT(n)).forEach(f, target);
         return this;
       }
+      iterNodes(f,target){
+        this.#vecNodes.forEach(f, target);
+        return this;
+      }
       iterLayer(n, f, target){
         this.#vecNodes.filter(o=> o.layer==n).forEach(f, target);
         return this;

@@ -735,7 +735,6 @@
 				this.#vecPop.forEach((p,i)=> p.updateScore(scores[i]));
 				this.#vecPop= _genPop(this.#vecPop, this.#extra);
 				this.#generation += 1;
-				return this.createPhenotypes();
 			}
 			createPhenotypes(){
 				return this.#vecPop;
@@ -751,7 +750,7 @@
 			ChromoGA,
 
 			/**
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {any} optimal
 			 * @param {object} extra
 			 * @return {array}
@@ -780,7 +779,7 @@
 				return [now===null, imp]
 			},
 			/**
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {number|array} pop
 			 * @param {object} extra
 			 * @return {array}
@@ -810,7 +809,7 @@
 				return [now === null, pop];
 			},
 			/**
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {function} optimizationFunction
 			 * @param {function} isImprovement
 			 * @param {function} isOptimal
@@ -839,7 +838,7 @@
 				return [tout, best];
 			},
 			/**Roulette selection.
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {array} pop
 			 * @param {number} totalScore
 			 * @return {Chromosome}
@@ -853,7 +852,7 @@
 				});
 			},
 			/**Roulette selection with probabilities.
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {array} pop
 			 * @param {number} totalScore
 			 * @return {Chromosome}
@@ -866,7 +865,7 @@
 				return pop[0];
 			},
 			/**
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {array} pop
 			 * @param {number} N
 			 * @return {Chromosome}
@@ -887,7 +886,7 @@
 				return pop[chosenOne];
 			},
 			/**
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {array} pop current generation
 			 * @return {Chromosome}
 			 */
@@ -900,7 +899,7 @@
 				}
 			},
 			/**Calculate statistics on population based on scores.
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {array} pop current generation
 			 * @return {Statistics}
 			 */
@@ -927,7 +926,7 @@
 			 * its position in the ladder.
 			 * (so if a genome ends up last it gets score of zero,
 			 * if best then it gets a score equal to the size of the population.
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {array} pop current generation
 			 * @return {Statistics}
 			 */
@@ -940,7 +939,7 @@
 				return _$.calcStats(pop);
 			},
 			/**Scales the fitness using sigma scaling.
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {array} pop current generation
 			 * @param {Statistics} stats
 			 * @return {array} [sigma, new_stats]
@@ -959,7 +958,7 @@
 			 * reduced each generation by a small amount.
 			 * As Temp decreases the difference spread between the high and
 			 * low fitnesses increases.
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {array} pop current generation
 			 * @param {number} boltzmannTemp
 			 * @return {array} [boltzmannTemp, new_stats]
@@ -980,7 +979,7 @@
 				return [boltzmannTemp, calcStats(pop)];
 			},
 			/**
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {object} best
 			 * @param {object} extra
 			 * @param {boolean} timeOut
@@ -996,7 +995,7 @@
         console.log(_.fill(80,"-").join(""));
       },
 			/**
-			 * @memberof module:mcfud/algo/NNetGA
+			 * @memberof module:mcfud/algo/ChromoGA
 			 * @param {object} options
 			 */
 			config(options){
