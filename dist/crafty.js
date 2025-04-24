@@ -8909,18 +8909,6 @@
 
     };
 
-    //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    function argMax(arr){
-      let max= -Infinity, pos= -1;
-      arr.forEach((v,i)=>{
-        if(v>max){
-          max=v;pos=i;
-        }
-      });
-      return [pos, max];
-    }
-
     /**
      * @class
      */
@@ -8933,13 +8921,15 @@
       #qtable;
       #options;
       constructor(alpha,gamma,minEpsilon,maxEpsilon,decayRate,options){
+        this.#options= _.inject({}, options || {});
         this.#maxEpsilon=maxEpsilon;
         this.#minEpsilon=minEpsilon;
         this.#decayRate=decayRate;
         this.#alpha=alpha;
         this.#gamma=gamma;
         this.#qtable = new Map();
-        this.#options= options ?? _.inject({}, options);
+        if(this.#options.qtableCtor)
+          this.#options.qtableCtor(this.#qtable);
         if(!this.#options.randActionFunc)
           this.#options.randActionFunc= function(a){ return _.randItem(a) };
       }
@@ -8966,7 +8956,7 @@
         let m= this.#safeGetState(nextState);
         let ks=m.keys().toArray().sort();
         let nvs= ks.map(a=> this.getQValue(nextState,a));
-        let max = nvs.length>0 ? argMax(nvs)[1] : 0;
+        let max = nvs.length>0 ? _.argMax(nvs)[1] : 0;
         // q-learning formula
         let nv= cv + this.#alpha * (reward + this.#gamma * max - cv);
         this.#safeGetState(state).set(action, nv);
