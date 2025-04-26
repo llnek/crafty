@@ -8710,6 +8710,9 @@
       clone(){
         return NeuralNet.fromJSON(this.toJSON())
       }
+      size(){
+        return this.#vecNodes.length;
+      }
       /**Update network for this clock cycle.
        * @param {number[]} data
        * @param {RunType} type
